@@ -1,0 +1,50 @@
+services:
+  # PocketBase backend. It embeds its own SQLite database under pb_data/,
+  # which is where all application data lives.
+  pocketbase:
+    image: ghcr.io/muchobien/pocketbase:0.38.2
+    restart: unless-stopped
+    environment:
+      PB_HOST: 0.0.0.0
+      PB_PORT: 8090
+      # Superuser is auto-created/updated on startup. Override via .env.
+      PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@example.com}
+      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-admin123456}
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./pb_data:/pb_data
+      - ./pb_hooks:/pb_hooks
+      # PocketBase defaults migrationsDir to <dataDir>/../pb_migrations, so this
+      # mount is what makes the collection snapshot apply on startup.
+      - ./pb_migrations:/pb_migrations
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8090/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Flutter web app, compiled and served as static files by nginx.
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Baked into the web bundle at build time. Must be reachable from the
+        # browser. Override via .env for non-local deployments.
+        PB_URL: ${PB_URL:-http://127.0.0.1:8090}
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      pocketbase:
+        condition: service_healthy

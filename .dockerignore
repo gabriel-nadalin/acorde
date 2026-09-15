@@ -1,0 +1,37 @@
+# Flutter/Dart build artifacts and local tooling state
+.dart_tool/
+.packages
+build/
+coverage/
+.flutter-plugins-dependencies
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Platform folders not needed for a web build
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Backend runtime data and binaries (owned by the `pocketbase` service, not the app image)
+pb_data/
+pb_hooks/
+pb_migrations/
+pocketbase
+pocketbase.zip
+.pb_cookie
+cookie.txt
+
+# Tooling / docs
+scripts/
+test/
+.git/
+.gitignore
+README.md
+CHANGELOG.md
+LICENSE.md

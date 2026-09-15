@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.0
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Infos are non-fatal: the repo still carries analyzer infos in the dev
+      # scripts. Errors and warnings fail the job.
+      - run: flutter analyze --no-fatal-infos
+
+      - run: flutter test
+
+      # The shipped artifact is the compiled web bundle; make sure it builds.
+      - run: flutter build web --release
