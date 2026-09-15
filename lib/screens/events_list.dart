@@ -26,9 +26,42 @@ class _EventsListPageState extends State<EventsListPage> {
   DateTime _focusedMonth = DateTime.now();
 
   EventRepository get _eventsRepo => context.read<EventRepository>();
+  AuthController get _auth => context.read<AuthController>();
 
-  Set<String> get _perfSet => widget.myPerformerIds != null ? Set.from(widget.myPerformerIds!) : <String>{};
-  Set<String> get _venSet => widget.myVenueIds != null ? Set.from(widget.myVenueIds!) : <String>{};
+  /// Explicit venue focus of this page (`/calendar/venue/:id`), if any.
+  String? get _venueFocusId =>
+      (widget.venueId != null && widget.venueId!.isNotEmpty) ? widget.venueId : null;
+
+  /// True when this page was given its own id scope (a tab or a route).
+  bool get _hasScope =>
+      (widget.myPerformerIds?.isNotEmpty ?? false) || (widget.myVenueIds?.isNotEmpty ?? false);
+
+  /// True when the page carries no id scope at all, so it follows the user's
+  /// own assignments instead of a narrowed view.
+  bool get _followsAssignments => widget.myPerformerIds == null && widget.myVenueIds == null;
+
+  /// Whether [e] is booked by a performer this page tracks.
+  ///
+  /// An explicit tab/route id list narrows the page to those performers; a
+  /// page with no scope at all follows the user's assignments, whose
+  /// membership [AuthController] computes once in `refresh()`. A page scoped
+  /// by the *other* id list tracks no performers, so a performer tab never
+  /// picks up the user's unrelated bookings.
+  bool _matchesPerformer(Event e) {
+    final scope = widget.myPerformerIds;
+    if (scope != null) return e.performers.any(scope.contains);
+    return _followsAssignments && e.performers.any(_auth.isMyPerformer);
+  }
+
+  /// Whether [e] is booked at a venue this page tracks; see
+  /// [_matchesPerformer].
+  bool _matchesVenue(Event e) {
+    final venueId = e.venueId;
+    if (venueId == null) return false;
+    final scope = widget.myVenueIds;
+    if (scope != null) return scope.contains(venueId);
+    return _followsAssignments && _auth.isMyVenue(venueId);
+  }
 
   @override
   void initState() {
@@ -86,9 +119,9 @@ class _EventsListPageState extends State<EventsListPage> {
 
   Set<String> _eventCats(Event e) {
     final cats = <String>{};
-    final hasMyPerfs = widget.myPerformerIds != null && widget.myPerformerIds!.isNotEmpty;
-    final hasMyVens = widget.myVenueIds != null && widget.myVenueIds!.isNotEmpty;
-    final isVenueView = widget.venueMode || (widget.venueId != null && widget.venueId!.isNotEmpty);
+    final hasMyPerfs = widget.myPerformerIds?.isNotEmpty ?? false;
+    final hasMyVens = widget.myVenueIds?.isNotEmpty ?? false;
+    final isVenueView = widget.venueMode || (widget.venueId?.isNotEmpty ?? false);
     final isPerfOnlyView = hasMyPerfs && !hasMyVens && !isVenueView;
     final isVenOnlyView = hasMyVens && !hasMyPerfs && !isVenueView;
 
@@ -100,13 +133,14 @@ class _EventsListPageState extends State<EventsListPage> {
 
     // If this is explicitly a performer-only view, treat events as performer bookings
     if (isPerfOnlyView) {
-      if (e.performers.isNotEmpty && (widget.myPerformerIds ?? []).any((p) => e.performers.contains(p))) cats.add('performer');
+      if (e.performers.isNotEmpty && _matchesPerformer(e)) cats.add('performer');
       return cats;
     }
 
-    // Combined or default behavior: honor membership sets when present
-    if (_perfSet.isNotEmpty && e.performers.any((p) => _perfSet.contains(p))) cats.add('performer');
-    if (_venSet.isNotEmpty && e.venueId != null && _venSet.contains(e.venueId)) cats.add('venue');
+    // Combined or default behavior: honour the page scope, else the user's own
+    // assignments.
+    if (_matchesPerformer(e)) cats.add('performer');
+    if (_matchesVenue(e)) cats.add('venue');
     return cats;
   }
 
@@ -259,10 +293,10 @@ class _EventsListPageState extends State<EventsListPage> {
                   errorMessage: 'Could not load events',
                   onRetry: _refresh,
                   builder: (context, items) {
-                    final filtered = (widget.venueId != null && widget.venueId!.isNotEmpty)
-                        ? items.where((e) => e.venueId == widget.venueId).toList()
-                        : ((widget.myPerformerIds != null && widget.myPerformerIds!.isNotEmpty) || (widget.myVenueIds != null && widget.myVenueIds!.isNotEmpty))
-                            ? items.where((e) => (_perfSet.isNotEmpty && e.performers.any((p) => _perfSet.contains(p))) || (_venSet.isNotEmpty && e.venueId != null && _venSet.contains(e.venueId))).toList()
+                    final filtered = _venueFocusId != null
+                        ? items.where((e) => e.venueId == _venueFocusId).toList()
+                        : _hasScope
+                            ? items.where((e) => _matchesPerformer(e) || _matchesVenue(e)).toList()
                             : items;
 
                     final highlighted = _highlightedDays(filtered);

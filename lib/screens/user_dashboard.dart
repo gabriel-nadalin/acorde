@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../data/repositories.dart';
+import '../widgets/async_view.dart';
 
 class UserDashboardPage extends StatefulWidget {
   const UserDashboardPage({super.key});
@@ -12,28 +13,20 @@ class UserDashboardPage extends StatefulWidget {
 }
 
 class _UserDashboardPageState extends State<UserDashboardPage> {
-  bool _loading = true;
+  late Future<void> _future;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _future = _load();
   }
 
-  Future<void> _load() async {
-    final auth = context.read<AuthController>();
-    setState(() => _loading = true);
-    try {
-      await auth.refresh(force: true);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load data: $e')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+  /// Reloads the user's entity caches and recomputes their assignments.
+  Future<void> _load() => context.read<AuthController>().refresh(force: true);
+
+  Future<void> _reload() async {
+    setState(() => _future = _load());
+    await _future;
   }
 
   @override
@@ -41,8 +34,6 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
     final auth = context.read<AuthController>();
     final user = auth.user ?? const <String, dynamic>{};
     final name = user['name'] ?? user['email'] ?? 'User';
-    final performers = auth.myPerformers;
-    final venues = auth.myVenues;
     return Scaffold(
       appBar: AppBar(
         title: Text('Dashboard — $name'),
@@ -62,10 +53,16 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _load,
+      body: FutureBuilder<void>(
+        future: _future,
+        builder: (context, snap) => AsyncView<void>(
+          snapshot: snap,
+          onRetry: _reload,
+          builder: (context, _) {
+            final performers = auth.myPerformers;
+            final venues = auth.myVenues;
+            return RefreshIndicator(
+              onRefresh: _reload,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -92,7 +89,10 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                     ),
                 ],
               ),
-            ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

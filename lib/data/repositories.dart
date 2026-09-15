@@ -155,26 +155,6 @@ class EventRepository extends ChangeNotifier {
     }
   }
 
-  /// Events overlapping [start, end), used for schedule-conflict checks.
-  ///
-  /// Falls back to the offline cache when the server is unreachable, so
-  /// conflict detection still works offline (best-effort).
-  Future<List<Event>> overlapping(DateTime start, DateTime end) async {
-    final s = start.toUtc().toIso8601String();
-    final e = end.toUtc().toIso8601String();
-    try {
-      return await _service.getEvents(
-        perPage: 200,
-        filter: 'start < "$e" && end > "$s"',
-      );
-    } catch (_) {
-      return _monthCache.values
-          .expand((list) => list)
-          .where((ev) => ev.start.isBefore(end) && ev.end.isAfter(start))
-          .toList();
-    }
-  }
-
   Future<String> create(Event event) async {
     final id = await _service.createEvent(event);
     await _reloadIfLoaded();
@@ -267,11 +247,25 @@ class AuthController extends ChangeNotifier {
   Map<String, dynamic>? _user;
   List<Map<String, dynamic>> _myPerformers = [];
   List<Map<String, dynamic>> _myVenues = [];
+  // Id sets mirroring the lists above, so screens can ask "is this mine?"
+  // without re-walking the records (or re-deriving membership) themselves.
+  Set<String> _myPerformerIds = {};
+  Set<String> _myVenueIds = {};
 
   Map<String, dynamic>? get user => _user;
   bool get isLoggedIn => _user != null;
   List<Map<String, dynamic>> get myPerformers => List.unmodifiable(_myPerformers);
   List<Map<String, dynamic>> get myVenues => List.unmodifiable(_myVenues);
+
+  /// True when [id] is a performer assigned to the logged-in user.
+  ///
+  /// Membership is computed once in [refresh] from each record's `memberIds`;
+  /// callers must not re-implement that comparison.
+  bool isMyPerformer(String id) => _myPerformerIds.contains(id);
+
+  /// True when [id] is a venue managed by the logged-in user; see
+  /// [isMyPerformer].
+  bool isMyVenue(String id) => _myVenueIds.contains(id);
 
   Future<bool> login(String email, String password) async {
     final record = await _service.login(email, password);
@@ -306,6 +300,8 @@ class AuthController extends ChangeNotifier {
     _user = null;
     _myPerformers = [];
     _myVenues = [];
+    _myPerformerIds = {};
+    _myVenueIds = {};
     _service.restoreAuth(null, null);
     unawaited(_clearSession());
     notifyListeners();
@@ -350,6 +346,8 @@ class AuthController extends ChangeNotifier {
       _myVenues = venues.items
           .where((v) => _service.parseIds(v['managerIds']).contains(userId))
           .toList();
+      _myPerformerIds = _myPerformers.map((p) => p['id']?.toString()).whereType<String>().toSet();
+      _myVenueIds = _myVenues.map((v) => v['id']?.toString()).whereType<String>().toSet();
     } catch (_) {
       // entity lookup failed; keep assignments as-is
     }

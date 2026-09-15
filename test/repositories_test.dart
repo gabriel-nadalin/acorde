@@ -156,49 +156,6 @@ void main() {
     expect(secondRepo.isMonthStale(DateTime(2026, 8)), isTrue);
   });
 
-  test('EventRepository overlapping falls back to cached months offline', () async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-
-    var offline = false;
-    final client = MockClient((request) async {
-      if (offline) throw http.ClientException('offline');
-      return http.Response(
-        jsonEncode({
-          'items': [
-            {
-              'id': 'e1',
-              'title': 'Gig',
-              'start': '2026-08-01T19:00:00Z',
-              'end': '2026-08-01T21:00:00Z',
-              'venueId': 'v1',
-              'performers': '[]',
-            },
-          ],
-        }),
-        200,
-        headers: {'content-type': 'application/json'},
-      );
-    });
-    final repo = EventRepository(
-      service: PocketBaseService(client: client),
-      prefs: Future.value(prefs),
-    );
-    await repo.loadForMonth(DateTime(2026, 8));
-
-    offline = true;
-    final overlapping = await repo.overlapping(
-      DateTime.utc(2026, 8, 1, 18),
-      DateTime.utc(2026, 8, 1, 22),
-    );
-    expect(overlapping, hasLength(1));
-    final none = await repo.overlapping(
-      DateTime.utc(2026, 9, 1),
-      DateTime.utc(2026, 9, 2),
-    );
-    expect(none, isEmpty);
-  });
-
   test('EventRepository dedups concurrent loads of the same month', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();

@@ -15,6 +15,45 @@ const String kPocketBaseUrl = String.fromEnvironment(
   defaultValue: 'http://127.0.0.1:8090',
 );
 
+/// Failure reported by PocketBase for a rejected request.
+///
+/// PocketBase answers a failed write with a JSON envelope such as
+/// `{"data":{},"message":"Schedule conflict: venue already booked in this time
+/// range.","status":400}`; [message] carries that human-readable text so
+/// screens can surface the server's own explanation instead of guessing the
+/// rule client-side. Bodies that are not JSON are kept verbatim.
+class PocketBaseException implements Exception {
+  PocketBaseException(this.statusCode, this.message);
+
+  /// Builds an exception from a PocketBase error body.
+  factory PocketBaseException.fromBody(int statusCode, String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        final message = decoded['message']?.toString();
+        if (message != null && message.isNotEmpty) {
+          return PocketBaseException(statusCode, message);
+        }
+      }
+    } catch (_) {
+      // Not JSON: fall back to the raw body.
+    }
+    return PocketBaseException(statusCode, body);
+  }
+
+  /// HTTP status reported by the server (400 for a schedule conflict, 403 for
+  /// a permission failure, ...).
+  final int statusCode;
+
+  /// Human-readable reason from the server, e.g. "Schedule conflict: venue
+  /// already booked in this time range.".
+  final String message;
+
+  @override
+  String toString() =>
+      message.isEmpty ? 'PocketBaseException($statusCode)' : 'PocketBaseException($statusCode): $message';
+}
+
 class PocketBaseService {
   final String baseUrl;
   final http.Client _client;
@@ -97,7 +136,7 @@ class PocketBaseService {
       final id = data['id']?.toString();
       return id ?? '';
     } else {
-      throw Exception('PocketBase create failed: ${resp.statusCode}: ${resp.body}');
+      throw PocketBaseException.fromBody(resp.statusCode, resp.body);
     }
   }
 
@@ -174,7 +213,7 @@ class PocketBaseService {
     final url = Uri.parse('$baseUrl/api/collections/events/records/$id');
     final resp = await _client.patch(url, headers: _buildHeaders(), body: jsonEncode(updates)).timeout(const Duration(seconds: 10));
     if (!(resp.statusCode >= 200 && resp.statusCode < 300)) {
-      throw Exception('PocketBase update failed: ${resp.statusCode}: ${resp.body}');
+      throw PocketBaseException.fromBody(resp.statusCode, resp.body);
     }
   }
 
@@ -182,7 +221,7 @@ class PocketBaseService {
     final url = Uri.parse('$baseUrl/api/collections/events/records/$id');
     final resp = await _client.delete(url, headers: _buildHeaders()).timeout(const Duration(seconds: 10));
     if (!(resp.statusCode >= 200 && resp.statusCode < 300)) {
-      throw Exception('PocketBase delete failed: ${resp.statusCode}: ${resp.body}');
+      throw PocketBaseException.fromBody(resp.statusCode, resp.body);
     }
   }
 
