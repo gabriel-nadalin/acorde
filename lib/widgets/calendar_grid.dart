@@ -1,42 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/event.dart';
 import '../theme/colors.dart';
-
-/// YYYY-MM-DD key for a day, used for highlight sets and event-day matching.
-String ymdKey(DateTime d) =>
-    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-/// Events overlapping the given calendar day (local time).
-List<Event> eventsForDay(DateTime day, List<Event> items) {
-  return items.where((e) {
-    final start = e.start.toLocal();
-    final end = e.end.toLocal();
-    final dayStart = DateTime(day.year, day.month, day.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-    return start.isBefore(dayEnd) && end.isAfter(dayStart);
-  }).toList();
-}
-
-/// "August 2026" label for a month.
-String monthLabel(DateTime m) {
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  return '${months[m.month - 1]} ${m.year}';
-}
+import '../utils/calendar_math.dart';
 
 /// Month calendar grid: weekday header, month navigation, and day cells.
 ///
@@ -51,6 +19,7 @@ class CalendarGrid extends StatelessWidget {
     required this.highlightedDays,
     required this.eventCats,
     required this.onDayTap,
+    this.dayEnabled,
     this.showLegend = false,
   });
 
@@ -59,15 +28,22 @@ class CalendarGrid extends StatelessWidget {
   final List<Event> events;
   final Set<String> highlightedDays;
 
-  /// Per-event categories (e.g. {'performer'}, {'venue'}) used for dot colors.
+  /// Per-event categories (e.g. {'performer'}, {'venue'}) used for the day
+  /// markers.
   final Set<String> Function(Event event) eventCats;
 
   final void Function(BuildContext context, DateTime day, List<Event> dayEvents, bool hasEvent) onDayTap;
+
+  /// Whether a day cell does anything when tapped. Drives the semantics
+  /// `button` flag so screen readers don't announce inert cells as actions.
+  final bool Function(bool hasEvent)? dayEnabled;
 
   final bool showLegend;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final year = focusedMonth.year;
     final month = focusedMonth.month;
     final firstOfMonth = DateTime(year, month, 1);
@@ -84,11 +60,13 @@ class CalendarGrid extends StatelessWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left),
+                tooltip: l10n.calendarPrevMonth,
                 onPressed: () => onMonthChanged(DateTime(year, month - 1, 1)),
               ),
-              Text(monthLabel(focusedMonth), style: Theme.of(context).textTheme.titleLarge),
+              Text(monthLabel(locale, focusedMonth), style: Theme.of(context).textTheme.titleLarge),
               IconButton(
                 icon: const Icon(Icons.chevron_right),
+                tooltip: l10n.calendarNextMonth,
                 onPressed: () => onMonthChanged(DateTime(year, month + 1, 1)),
               ),
             ],
@@ -97,14 +75,9 @@ class CalendarGrid extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
           child: Row(
-            children: const [
-              Expanded(child: Center(child: Text('Sun'))),
-              Expanded(child: Center(child: Text('Mon'))),
-              Expanded(child: Center(child: Text('Tue'))),
-              Expanded(child: Center(child: Text('Wed'))),
-              Expanded(child: Center(child: Text('Thu'))),
-              Expanded(child: Center(child: Text('Fri'))),
-              Expanded(child: Center(child: Text('Sat'))),
+            children: [
+              for (final name in weekdayAbbreviations(locale))
+                Expanded(child: Center(child: Text(name))),
             ],
           ),
         ),
@@ -152,42 +125,42 @@ class CalendarGrid extends StatelessWidget {
                   final dayDate = DateTime(year, month, dayIndex);
                   final hasEvent = highlightedDays.contains(ymdKey(dayDate));
 
-                  // Compute day's events and category once to reuse for dot and background.
+                  // Compute day's events and category once to reuse for the
+                  // marker and the background tint.
                   final dayEvents = eventsForDay(dayDate, events);
                   final cats = <String>{};
                   for (final e in dayEvents) {
                     cats.addAll(eventCats(e));
                   }
 
-                  Color dotColor;
-                  if (cats.length == 2) {
-                    dotColor = AppColors.both;
-                  } else if (cats.contains('performer')) {
-                    dotColor = AppColors.performer;
-                  } else if (cats.contains('venue')) {
-                    dotColor = AppColors.venue;
-                  } else {
-                    dotColor = AppColors.other;
-                  }
+                  final tint = _tintFor(context, cats);
+                  final bgColor = hasEvent ? tint.withValues(alpha: 0.12) : Colors.transparent;
+                  final enabled = (dayEnabled ?? (_) => true)(hasEvent);
 
-                  final bgColor = hasEvent ? dotColor.withValues(alpha: 0.12) : Colors.transparent;
-
-                  return GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onDayTap(context, dayDate, dayEvents, hasEvent),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(dayIndex.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
-                            if (hasEvent) const SizedBox(height: 6),
-                            if (hasEvent) _dot(dotColor),
-                          ],
+                  return Semantics(
+                    button: enabled,
+                    // The cell paints the day number and markers; the label
+                    // replaces them for assistive tech so the colour/shape
+                    // encoding is never the only carrier of meaning.
+                    excludeSemantics: true,
+                    label: _daySemanticsLabel(l10n, locale, dayDate, hasEvent, cats),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onDayTap(context, dayDate, dayEvents, hasEvent),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(dayIndex.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                              if (hasEvent) const SizedBox(height: 6),
+                              if (hasEvent) _DayMarker(cats: cats),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -202,39 +175,97 @@ class CalendarGrid extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                _LegendDot(color: AppColors.performer, label: AppStrings.performer),
-                SizedBox(width: 12),
-                _LegendDot(color: AppColors.venue, label: AppStrings.venue),
-                SizedBox(width: 12),
-                _LegendDot(color: AppColors.both, label: AppStrings.both),
+              children: [
+                _LegendItem(cats: const {'performer'}, label: l10n.performer),
+                const SizedBox(width: 12),
+                _LegendItem(cats: const {'venue'}, label: l10n.venue),
+                const SizedBox(width: 12),
+                _LegendItem(cats: const {'performer', 'venue'}, label: l10n.both),
               ],
             ),
           ),
       ],
     );
   }
+
+  static Color _tintFor(BuildContext context, Set<String> cats) {
+    if (cats.length == 2) return AppColors.both(context);
+    if (cats.contains('performer')) return AppColors.performer(context);
+    if (cats.contains('venue')) return AppColors.venue(context);
+    return AppColors.other(context);
+  }
+
+  static String _daySemanticsLabel(
+    AppLocalizations l10n,
+    String locale,
+    DateTime day,
+    bool hasEvent,
+    Set<String> cats,
+  ) {
+    final date = formatFullDate(locale, day);
+    if (!hasEvent) return l10n.calendarDayFree(date);
+    if (cats.length == 2) return l10n.calendarDayBoth(date);
+    if (cats.contains('performer')) return l10n.calendarDayPerformer(date);
+    if (cats.contains('venue')) return l10n.calendarDayVenue(date);
+    return l10n.calendarDayOther(date);
+  }
 }
 
-class _LegendDot extends StatelessWidget {
-  final Color color;
+/// Category marker.
+///
+/// Colour alone must not carry the meaning, so the shape does too:
+/// performer = circle, venue = square, both = one of each.
+class _DayMarker extends StatelessWidget {
+  const _DayMarker({required this.cats, this.size = 8});
+
+  final Set<String> cats;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPerformer = cats.contains('performer');
+    final hasVenue = cats.contains('venue');
+    if (hasPerformer && hasVenue) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _marker(AppColors.performer(context), BoxShape.circle),
+          SizedBox(width: size * 0.4),
+          _marker(AppColors.venue(context), BoxShape.rectangle),
+        ],
+      );
+    }
+    if (hasPerformer) return _marker(AppColors.performer(context), BoxShape.circle);
+    if (hasVenue) return _marker(AppColors.venue(context), BoxShape.rectangle);
+    return _marker(AppColors.other(context), BoxShape.circle);
+  }
+
+  Widget _marker(Color color, BoxShape shape) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color,
+          shape: shape,
+          borderRadius: shape == BoxShape.rectangle ? BorderRadius.circular(size * 0.2) : null,
+        ),
+      );
+}
+
+class _LegendItem extends StatelessWidget {
+  const _LegendItem({required this.cats, required this.label});
+
+  final Set<String> cats;
   final String label;
-  const _LegendDot({required this.color, required this.label});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _dot(color, size: 12),
+        _DayMarker(cats: cats, size: 12),
         const SizedBox(width: 6),
         Text(label, style: Theme.of(context).textTheme.bodyMedium),
       ],
     );
   }
 }
-
-Widget _dot(Color color, {double size = 8}) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle));

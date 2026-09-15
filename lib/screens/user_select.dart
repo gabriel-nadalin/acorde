@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../data/repositories.dart';
+import '../l10n/app_localizations.dart';
 
 /// Email/password sign-in against the PocketBase `users` collection.
 class UserSelectPage extends StatefulWidget {
@@ -40,10 +41,11 @@ class _UserSelectPageState extends State<UserSelectPage> {
 
   Future<void> _submit() async {
     if (_submitting) return;
+    final l10n = AppLocalizations.of(context);
     final email = _email.text.trim();
     final password = _password.text;
     if (email.isEmpty || password.isEmpty) {
-      _showMessage('Enter your email and password.');
+      _showMessage(l10n.enterEmailAndPassword);
       return;
     }
 
@@ -59,7 +61,7 @@ class _UserSelectPageState extends State<UserSelectPage> {
     setState(() => _submitting = false);
 
     if (!ok) {
-      _showMessage('Login failed — check your email and password.');
+      _showMessage(l10n.loginFailed);
       return;
     }
     context.go(auth.myPerformers.isEmpty && auth.myVenues.isEmpty ? '/dashboard' : '/calendar');
@@ -71,8 +73,9 @@ class _UserSelectPageState extends State<UserSelectPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign In')),
+      appBar: AppBar(title: Text(l10n.signIn)),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
@@ -87,7 +90,7 @@ class _UserSelectPageState extends State<UserSelectPage> {
                   keyboardType: TextInputType.emailAddress,
                   autofillHints: const [AutofillHints.email],
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: InputDecoration(labelText: l10n.email),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -96,7 +99,7 @@ class _UserSelectPageState extends State<UserSelectPage> {
                   autofillHints: const [AutofillHints.password],
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submit(),
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  decoration: InputDecoration(labelText: l10n.password),
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
@@ -107,7 +110,7 @@ class _UserSelectPageState extends State<UserSelectPage> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Sign In'),
+                      : Text(l10n.signIn),
                 ),
               ],
             ),

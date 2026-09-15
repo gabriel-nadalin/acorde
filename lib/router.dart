@@ -1,7 +1,5 @@
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import 'data/repositories.dart';
 import 'models/event.dart';
 import 'screens/create_event.dart';
 import 'screens/events_list.dart';
@@ -12,12 +10,15 @@ import 'screens/user_select.dart';
 /// App route table.
 ///
 /// Routes:
-///   /                     user selection (login)
+///   /                     sign-in
 ///   /dashboard            current user's entity list
 ///   /calendar             current user's tabbed calendar
 ///   /calendar/:type/:id   single-entity calendar browse (type = venue|performer)
 ///   /events/new           create event (?venueId=&venueName=&performerId=&date=&lockVenue=1)
 ///   /events/:id/edit      edit event (pass the Event via `extra`)
+///
+/// Route builders stay free of repository lookups: they forward ids and let
+/// the page resolve display names from the providers it already reads.
 final router = GoRouter(
   initialLocation: '/',
   routes: [
@@ -36,20 +37,12 @@ final router = GoRouter(
     GoRoute(
       path: '/calendar/:type/:id',
       builder: (context, state) {
-        final type = state.pathParameters['type'];
+        final venueMode = state.pathParameters['type'] == 'venue';
         final id = state.pathParameters['id'] ?? '';
-        final venueMode = type == 'venue';
-        final auth = context.read<AuthController>();
-        final venueRec = auth.venues.byId(id);
-        final performerRec = auth.performers.byId(id);
-        final String? venueName = venueRec?['name']?.toString();
-        final String? performerName = performerRec?['name']?.toString();
         return EventsListPage(
           venueMode: venueMode,
           venueId: venueMode ? id : null,
-          venueName: venueMode ? venueName : null,
           myPerformerIds: venueMode ? null : [id],
-          performerName: venueMode ? performerName : null,
         );
       },
     ),
@@ -71,8 +64,11 @@ final router = GoRouter(
       path: '/events/:id/edit',
       builder: (context, state) {
         final query = state.uri.queryParameters;
+        final extra = state.extra;
         return CreateEventPage(
-          event: state.extra as Event?,
+          // `extra` is untyped; a wrong runtime type must degrade to "no
+          // prefilled event" instead of throwing during navigation.
+          event: extra is Event ? extra : null,
           prefillVenueId: query['venueId'],
           prefillVenueName: query['venueName'],
           lockVenue: query['lockVenue'] == '1',

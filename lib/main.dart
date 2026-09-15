@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'data/repositories.dart';
+import 'l10n/app_localizations.dart';
 import 'router.dart';
 
 Future<void> main() async {
@@ -26,10 +28,26 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EventRepository()),
       ],
       child: MaterialApp.router(
-        title: 'Event Calendar',
+        onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+        localizationsDelegates: const [
+          ...AppLocalizations.localizationsDelegates,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         ),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.deepPurple,
+            brightness: Brightness.dark,
+          ),
+        ),
+        // Follow the platform setting; the calendar palette adapts via
+        // AppColors (see lib/theme/colors.dart).
+        themeMode: ThemeMode.system,
         routerConfig: router,
       ),
     );

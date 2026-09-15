@@ -3,8 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/event.dart';
 import '../data/repositories.dart';
+import '../l10n/app_localizations.dart';
 import '../router_paths.dart';
 import '../theme/colors.dart';
+import '../utils/calendar_math.dart';
 import '../widgets/async_view.dart';
 import '../widgets/calendar_grid.dart';
 
@@ -63,6 +65,25 @@ class _EventsListPageState extends State<EventsListPage> {
     return _followsAssignments && _auth.isMyVenue(venueId);
   }
 
+  /// Display name of the venue this page focuses on.
+  ///
+  /// Callers may pass a name (calendar tab) or only an id (route), so resolve
+  /// from the repository when needed — the router stays free of lookups.
+  String? get _venueDisplayName {
+    if (widget.venueName?.isNotEmpty ?? false) return widget.venueName;
+    final id = widget.venueId;
+    if (id == null || id.isEmpty) return null;
+    return _auth.venues.byId(id)?['name']?.toString();
+  }
+
+  /// Display name of the performer this page focuses on (single-id pages only).
+  String? get _performerDisplayName {
+    if (widget.performerName?.isNotEmpty ?? false) return widget.performerName;
+    final ids = widget.myPerformerIds;
+    if (ids == null || ids.length != 1) return null;
+    return _auth.performers.byId(ids.first)?['name']?.toString();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -87,8 +108,9 @@ class _EventsListPageState extends State<EventsListPage> {
       return await repo.loadForMonth(_focusedMonth);
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not load events: $e')),
+          SnackBar(content: Text('${l10n.couldNotLoadEvents}: $e')),
         );
       }
       return [];
@@ -100,21 +122,6 @@ class _EventsListPageState extends State<EventsListPage> {
       _future = _loadEvents();
     });
     await _future;
-  }
-
-  Set<String> _highlightedDays(List<Event> items) {
-    final s = <String>{};
-    for (final e in items) {
-      final start = e.start.toLocal();
-      final end = e.end.toLocal();
-      var current = DateTime(start.year, start.month, start.day);
-      final last = DateTime(end.year, end.month, end.day);
-      while (!current.isAfter(last)) {
-        s.add(ymdKey(current));
-        current = current.add(const Duration(days: 1));
-      }
-    }
-    return s;
   }
 
   Set<String> _eventCats(Event e) {
@@ -144,25 +151,27 @@ class _EventsListPageState extends State<EventsListPage> {
     return cats;
   }
 
-  Color _colorForEvent(Event e) {
+  Color _colorForEvent(BuildContext context, Event e) {
     final cats = _eventCats(e);
-    if (cats.length == 2) return AppColors.both;
-    if (cats.contains('performer')) return AppColors.performer;
-    if (cats.contains('venue')) return AppColors.venue;
-    return AppColors.other;
+    if (cats.length == 2) return AppColors.both(context);
+    if (cats.contains('performer')) return AppColors.performer(context);
+    if (cats.contains('venue')) return AppColors.venue(context);
+    return AppColors.other(context);
   }
 
   /// Day-cell tap: create (venue mode, empty day), or browse/edit via the
   /// day bottom sheet.
   Future<void> _onDayTap(BuildContext context, DateTime dayDate, List<Event> dayEvents, bool hasEvent) async {
     if (!widget.venueMode && !hasEvent) return;
+    final l10n = AppLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toLanguageTag();
     final list = dayEvents;
 
     if (widget.venueMode && !hasEvent) {
       final res = await context.push<bool?>(
         eventsNewPath(
           venueId: widget.venueMode ? widget.venueId : null,
-          venueName: widget.venueMode ? widget.venueName : null,
+          venueName: _venueDisplayName,
           lockVenue: true,
           date: dayDate,
         ),
@@ -183,28 +192,28 @@ class _EventsListPageState extends State<EventsListPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('${dayDate.year}-${dayDate.month.toString().padLeft(2, '0')}-${dayDate.day.toString().padLeft(2, '0')}', style: Theme.of(context).textTheme.titleLarge),
+                  Text(formatFullDate(locale, dayDate), style: Theme.of(context).textTheme.titleLarge),
                   if (widget.venueMode)
                     ElevatedButton.icon(
                       onPressed: () => Navigator.of(ctx).pop({'action': 'add'}),
                       icon: const Icon(Icons.add),
-                      label: const Text('Add Event'),
+                      label: Text(l10n.addEvent),
                     ),
                 ],
               ),
             ),
             Expanded(
               child: list.isEmpty
-                  ? Center(child: Text('No events', style: Theme.of(context).textTheme.bodyLarge))
+                  ? Center(child: Text(l10n.noEvents, style: Theme.of(context).textTheme.bodyLarge))
                   : ListView.separated(
                       itemCount: list.length,
                       separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (c, i) {
                         final e = list[i];
                         return ListTile(
-                          leading: CircleAvatar(radius: 8, backgroundColor: _colorForEvent(e)),
+                          leading: CircleAvatar(radius: 8, backgroundColor: _colorForEvent(context, e)),
                           title: Text(e.title),
-                          subtitle: Text('${e.start.toLocal()} - ${e.end.toLocal()}\n${_venueNameFor(e)} • ${_performerNamesFor(e)}'),
+                          subtitle: Text('${formatDateTime(locale, e.start.toLocal())} - ${formatDateTime(locale, e.end.toLocal())}\n${_venueNameFor(e)} • ${_performerNamesFor(e)}'),
                           onTap: widget.venueMode ? () => Navigator.of(ctx).pop({'action': 'edit', 'event': e}) : null,
                         );
                       },
@@ -222,7 +231,7 @@ class _EventsListPageState extends State<EventsListPage> {
         final res = await context.push<bool?>(
           eventsNewPath(
             venueId: widget.venueMode ? widget.venueId : null,
-            venueName: widget.venueMode ? widget.venueName : null,
+            venueName: _venueDisplayName,
             lockVenue: true,
             date: dayDate,
           ),
@@ -236,7 +245,7 @@ class _EventsListPageState extends State<EventsListPage> {
             eventsEditPath(
               ev.id ?? '',
               venueId: widget.venueMode ? widget.venueId : null,
-              venueName: widget.venueMode ? widget.venueName : null,
+              venueName: _venueDisplayName,
               lockVenue: true,
             ),
             extra: ev,
@@ -249,6 +258,7 @@ class _EventsListPageState extends State<EventsListPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -262,13 +272,14 @@ class _EventsListPageState extends State<EventsListPage> {
           },
         ),
         title: Builder(builder: (ctx) {
-          String titleStr;
+          final l10n = AppLocalizations.of(ctx);
+          final String titleStr;
           if (widget.venueMode) {
-            titleStr = widget.venueName?.isNotEmpty == true ? widget.venueName! : 'Venue Calendar';
-          } else if ((widget.myPerformerIds != null && widget.myPerformerIds!.isNotEmpty) || (widget.myVenueIds != null && widget.myVenueIds!.isNotEmpty)) {
-            titleStr = widget.performerName?.isNotEmpty == true ? widget.performerName! : 'My Calendar';
+            titleStr = _venueDisplayName ?? l10n.venueCalendar;
+          } else if (_hasScope) {
+            titleStr = _performerDisplayName ?? l10n.myCalendar;
           } else {
-            titleStr = widget.performerName?.isNotEmpty == true ? widget.performerName! : 'Performer Calendar';
+            titleStr = _performerDisplayName ?? l10n.performerCalendar;
           }
           return Text(titleStr);
         }),
@@ -279,9 +290,9 @@ class _EventsListPageState extends State<EventsListPage> {
           if (context.watch<EventRepository>().isMonthStale(_focusedMonth))
             MaterialBanner(
               leading: const Icon(Icons.cloud_off),
-              content: const Text('Offline — showing cached events'),
+              content: Text(l10n.offlineShowingCached),
               actions: [
-                TextButton(onPressed: _refresh, child: const Text('Retry')),
+                TextButton(onPressed: _refresh, child: Text(l10n.retry)),
               ],
             ),
           Expanded(
@@ -290,7 +301,7 @@ class _EventsListPageState extends State<EventsListPage> {
               builder: (context, snap) {
                 return AsyncView(
                   snapshot: snap,
-                  errorMessage: 'Could not load events',
+                  errorMessage: l10n.couldNotLoadEvents,
                   onRetry: _refresh,
                   builder: (context, items) {
                     final filtered = _venueFocusId != null
@@ -299,7 +310,7 @@ class _EventsListPageState extends State<EventsListPage> {
                             ? items.where((e) => _matchesPerformer(e) || _matchesVenue(e)).toList()
                             : items;
 
-                    final highlighted = _highlightedDays(filtered);
+                    final highlighted = highlightedDayKeys(filtered);
 
                     return CalendarGrid(
                       focusedMonth: _focusedMonth,
@@ -311,6 +322,9 @@ class _EventsListPageState extends State<EventsListPage> {
                       highlightedDays: highlighted,
                       eventCats: _eventCats,
                       onDayTap: _onDayTap,
+                      // Cells only act when the page can create on an empty
+                      // day (venue mode) or open the day's events.
+                      dayEnabled: (hasEvent) => widget.venueMode || hasEvent,
                       showLegend: (widget.myPerformerIds != null && widget.myPerformerIds!.isNotEmpty) &&
                           (widget.myVenueIds != null && widget.myVenueIds!.isNotEmpty),
                     );
@@ -331,7 +345,7 @@ class _EventsListPageState extends State<EventsListPage> {
               },
               // Use a page-unique heroTag to avoid duplicate Hero tags in nested scaffolds
               heroTag: widget.key ?? const ValueKey('events_list_fab'),
-              tooltip: 'New event',
+              tooltip: l10n.newEvent,
               child: const Icon(Icons.add),
             )
           : null,

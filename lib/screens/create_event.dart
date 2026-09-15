@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../models/event.dart';
 import '../data/repositories.dart';
+import '../l10n/app_localizations.dart';
 import '../services/pocketbase_service.dart';
 import '../widgets/date_time_field.dart';
 import '../widgets/entity_search_picker.dart';
@@ -137,11 +138,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<void> _submit() async {
+    final l10n = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
     if (_end.isBefore(_start)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('End must be after start')),
+          SnackBar(content: Text(l10n.endMustBeAfterStart)),
         );
       }
       return;
@@ -182,20 +184,21 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
     if (!mounted) return;
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $error')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorWithMessage(error))));
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(widget.event != null ? 'Event updated' : 'Event created')),
+      SnackBar(content: Text(widget.event != null ? l10n.eventUpdated : l10n.eventCreated)),
     );
     context.pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(widget.event != null ? 'Edit Event' : 'Create Event')),
+      appBar: AppBar(title: Text(widget.event != null ? l10n.editEvent : l10n.createEvent)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -205,15 +208,15 @@ class _CreateEventPageState extends State<CreateEventPage> {
               // Title
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter a title' : null,
+                decoration: InputDecoration(labelText: l10n.titleLabel),
+                validator: (v) => (v == null || v.trim().isEmpty) ? l10n.titleRequired : null,
               ),
               const SizedBox(height: 12),
 
               // Description
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
+                decoration: InputDecoration(labelText: l10n.descriptionLabel),
                 maxLines: 3,
               ),
               const SizedBox(height: 12),
@@ -221,13 +224,13 @@ class _CreateEventPageState extends State<CreateEventPage> {
               // Venue selector (unless locked via prefill)
               if (!widget.lockVenue) ...[
                 EntitySearchPicker(
-                  title: 'Venue',
-                  searchLabel: 'Search venues',
-                  emptyMessage: 'No venues found',
-                  errorMessage: 'Could not load venues',
-                  noneSelected: const Padding(
-                    padding: EdgeInsets.only(bottom: 6),
-                    child: Text('No venue selected', style: TextStyle(color: Colors.grey)),
+                  title: l10n.venue,
+                  searchLabel: l10n.searchVenues,
+                  emptyMessage: l10n.noVenuesFound,
+                  errorMessage: l10n.couldNotLoadVenues,
+                  noneSelected: Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(l10n.noVenueSelected, style: TextStyle(color: Theme.of(context).colorScheme.outline)),
                   ),
                   load: _loadVenues,
                   displayName: _venueName,
@@ -245,18 +248,18 @@ class _CreateEventPageState extends State<CreateEventPage> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Chip(
-                    label: Text('Venue: ${_selectedVenueName ?? _selectedVenueId}'),
+                    label: Text(l10n.venueWithName(_selectedVenueName ?? _selectedVenueId ?? '')),
                     backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                   ),
                 ),
 
               // Performers picker
               EntitySearchPicker(
-                title: 'Performers',
-                searchLabel: 'Search performers',
-                emptyMessage: 'No performers found',
-                errorMessage: 'Could not load performers',
-                noneSelected: const Chip(label: Text('None selected')),
+                title: l10n.performers,
+                searchLabel: l10n.searchPerformers,
+                emptyMessage: l10n.noPerformersFound,
+                errorMessage: l10n.couldNotLoadPerformers,
+                noneSelected: Chip(label: Text(l10n.noneSelected)),
                 load: _loadPerformers,
                 displayName: _performerName,
                 labelFor: (id, records) => _performerName(records.firstWhere(
@@ -270,12 +273,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
               const SizedBox(height: 12),
 
               // Start date/time
-              DateTimeField(label: 'Start', value: _start, onTap: _pickStart),
-              DateTimeField(label: 'End', value: _end, onTap: _pickEnd),
+              DateTimeField(label: l10n.startLabel, value: _start, onTap: _pickStart),
+              DateTimeField(label: l10n.endLabel, value: _end, onTap: _pickEnd),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _saving ? null : _submit,
-                child: _saving ? const CircularProgressIndicator() : Text(widget.event != null ? 'Save' : 'Create Event'),
+                child: _saving ? const CircularProgressIndicator() : Text(widget.event != null ? l10n.save : l10n.createEvent),
               ),
             ],
           ),

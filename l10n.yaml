@@ -1,0 +1,10 @@
+# Configuration for `flutter gen-l10n` (also run implicitly when
+# `generate: true` is set in pubspec.yaml).
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+# Generated code lives next to the ARB files and is imported relatively, so it
+# does not depend on the synthetic-package mechanism.
+output-dir: lib/l10n
+nullable-getter: false

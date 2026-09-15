@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../data/repositories.dart';
+import '../l10n/app_localizations.dart';
 import '../router_paths.dart';
 import '../theme/colors.dart';
 import 'events_list.dart';
@@ -38,24 +39,24 @@ class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerPr
     super.dispose();
   }
 
+  Widget _tabLabel(String name, Color dotColor) {
+    return Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
+      const SizedBox(width: 6),
+      Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
+    ]));
+  }
+
   List<Widget> _buildTabs() {
-    final tabs = <Widget>[];
-    tabs.add(const Tab(text: 'Combined'));
+    final l10n = AppLocalizations.of(context);
+    final tabs = <Widget>[Tab(text: l10n.combined)];
     for (final p in _performers) {
-      final name = (p['name'] ?? p['id'] ?? 'Performer').toString();
-      tabs.add(Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.performer, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
-      ])));
+      final name = (p['name'] ?? p['id'] ?? l10n.performer).toString();
+      tabs.add(_tabLabel(name, AppColors.performer(context)));
     }
     for (final v in _venues) {
-      final name = (v['name'] ?? v['id'] ?? 'Venue').toString();
-      tabs.add(Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.venue, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
-      ])));
+      final name = (v['name'] ?? v['id'] ?? l10n.venue).toString();
+      tabs.add(_tabLabel(name, AppColors.venue(context)));
     }
     return tabs;
   }
@@ -87,13 +88,14 @@ class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerPr
   }
 
   Future<void> _chooseAccountAndCreate() async {
+    final l10n = AppLocalizations.of(context);
     final choice = await showModalBottomSheet<Map<String, String>>(context: context, builder: (ctx) {
       return SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (_performers.isNotEmpty) ...[
-              const ListTile(title: Text('Create for performer')),
+              ListTile(title: Text(l10n.createForPerformer)),
               ..._performers.map((p) {
                 final id = p['id']?.toString() ?? '';
                 final name = (p['name'] ?? id).toString();
@@ -105,7 +107,7 @@ class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerPr
               }),
             ],
             if (_venues.isNotEmpty) ...[
-              const ListTile(title: Text('Create for venue')),
+              ListTile(title: Text(l10n.createForVenue)),
               ..._venues.map((v) {
                 final id = v['id']?.toString() ?? '';
                 final name = (v['name'] ?? id).toString();
@@ -134,12 +136,13 @@ class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerPr
   }
 
   Widget? _buildFab() {
+    final l10n = AppLocalizations.of(context);
     final index = _tabController.index;
     if (index == 0) {
       return FloatingActionButton(
         heroTag: const ValueKey('user_calendar_fab_combined'),
         onPressed: _chooseAccountAndCreate,
-        tooltip: 'New event',
+        tooltip: l10n.newEvent,
         child: const Icon(Icons.add),
       );
     }
@@ -154,7 +157,7 @@ class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerPr
           final res = await context.push<bool?>(eventsNewPath(performerId: id));
           if (res == true) setState(() => _version++);
         },
-        tooltip: 'New event (performer)',
+        tooltip: l10n.newEventForPerformer,
         child: const Icon(Icons.add),
       );
     }
@@ -171,16 +174,17 @@ class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerPr
         );
         if (res == true) setState(() => _version++);
       },
-      tooltip: 'New event (venue)',
+      tooltip: l10n.newEventForVenue,
       child: const Icon(Icons.add),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendar'),
+        title: Text(l10n.calendar),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
