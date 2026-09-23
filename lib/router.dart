@@ -3,14 +3,18 @@ import 'package:go_router/go_router.dart';
 import 'models/event.dart';
 import 'screens/create_event.dart';
 import 'screens/events_list.dart';
+import 'screens/sign_up.dart';
 import 'screens/user_calendar_tabs.dart';
 import 'screens/user_dashboard.dart';
 import 'screens/user_select.dart';
+import 'screens/venue_browse.dart';
 
 /// App route table.
 ///
 /// Routes:
 ///   /                     sign-in
+///   /signup               create account
+///   /venues               browse all venues
 ///   /dashboard            current user's entity list
 ///   /calendar             current user's tabbed calendar
 ///   /calendar/:type/:id   single-entity calendar browse (type = venue|performer)
@@ -25,6 +29,14 @@ final router = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const UserSelectPage(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => const SignUpPage(),
+    ),
+    GoRoute(
+      path: '/venues',
+      builder: (context, state) => const VenueBrowsePage(),
     ),
     GoRoute(
       path: '/dashboard',

@@ -91,15 +91,22 @@ class _EventsListPageState extends State<EventsListPage> {
   }
 
   String _venueNameFor(Event e) {
-    if (widget.venueId != null && widget.venueId == e.venueId && (widget.venueName ?? '').isNotEmpty) {
+    final id = e.venueId;
+    if (id == null || id.isEmpty) return '';
+    if (widget.venueId == id && (widget.venueName?.isNotEmpty ?? false)) {
       return widget.venueName!;
     }
-    return e.venueName ?? e.venueId ?? '';
+    // The `/calendar/venue/:id` route carries only an id, so resolve the
+    // display name from the loaded venue cache instead of printing the id.
+    return _auth.venues.byId(id)?['name']?.toString() ?? e.venueName ?? id;
   }
 
   String _performerNamesFor(Event e) {
     if (e.performerNames.isNotEmpty) return e.performerNames.join(', ');
-    return e.performers.join(', ');
+    // Same for performers: map ids to names, falling back to the id.
+    return e.performers
+        .map((id) => _auth.performers.byId(id)?['name']?.toString() ?? id)
+        .join(', ');
   }
 
   Future<List<Event>> _loadEvents() async {
@@ -159,15 +166,26 @@ class _EventsListPageState extends State<EventsListPage> {
     return AppColors.other(context);
   }
 
+  /// True when this page may create/edit events: a venue page for a venue the
+  /// user manages. Browsing any other venue's calendar stays read-only, which
+  /// is exactly what the server enforces (pb_hooks/events.guard.pb.js), so the
+  /// UI never offers an action that would come back 403.
+  bool get _canEditVenue {
+    if (!widget.venueMode) return false;
+    final id = widget.venueId;
+    if (id == null || id.isEmpty) return false;
+    return _auth.isMyVenue(id);
+  }
+
   /// Day-cell tap: create (venue mode, empty day), or browse/edit via the
   /// day bottom sheet.
   Future<void> _onDayTap(BuildContext context, DateTime dayDate, List<Event> dayEvents, bool hasEvent) async {
-    if (!widget.venueMode && !hasEvent) return;
+    if (!_canEditVenue && !hasEvent) return;
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final list = dayEvents;
 
-    if (widget.venueMode && !hasEvent) {
+    if (_canEditVenue && !hasEvent) {
       final res = await context.push<bool?>(
         eventsNewPath(
           venueId: widget.venueMode ? widget.venueId : null,
@@ -193,7 +211,7 @@ class _EventsListPageState extends State<EventsListPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(formatFullDate(locale, dayDate), style: Theme.of(context).textTheme.titleLarge),
-                  if (widget.venueMode)
+                  if (_canEditVenue)
                     ElevatedButton.icon(
                       onPressed: () => Navigator.of(ctx).pop({'action': 'add'}),
                       icon: const Icon(Icons.add),
@@ -214,7 +232,7 @@ class _EventsListPageState extends State<EventsListPage> {
                           leading: CircleAvatar(radius: 8, backgroundColor: _colorForEvent(context, e)),
                           title: Text(e.title),
                           subtitle: Text('${formatDateTime(locale, e.start.toLocal())} - ${formatDateTime(locale, e.end.toLocal())}\n${_venueNameFor(e)} • ${_performerNamesFor(e)}'),
-                          onTap: widget.venueMode ? () => Navigator.of(ctx).pop({'action': 'edit', 'event': e}) : null,
+                          onTap: _canEditVenue ? () => Navigator.of(ctx).pop({'action': 'edit', 'event': e}) : null,
                         );
                       },
                     ),
@@ -239,7 +257,7 @@ class _EventsListPageState extends State<EventsListPage> {
         if (res == true) await _refresh();
       } else if (action == 'edit' && result['event'] is Event) {
         final ev = result['event'] as Event;
-        if (widget.venueMode) {
+        if (_canEditVenue) {
           if (!mounted) return;
           final res = await context.push<bool?>(
             eventsEditPath(
@@ -324,7 +342,7 @@ class _EventsListPageState extends State<EventsListPage> {
                       onDayTap: _onDayTap,
                       // Cells only act when the page can create on an empty
                       // day (venue mode) or open the day's events.
-                      dayEnabled: (hasEvent) => widget.venueMode || hasEvent,
+                      dayEnabled: (hasEvent) => _canEditVenue || hasEvent,
                       showLegend: (widget.myPerformerIds != null && widget.myPerformerIds!.isNotEmpty) &&
                           (widget.myVenueIds != null && widget.myVenueIds!.isNotEmpty),
                     );
@@ -335,7 +353,7 @@ class _EventsListPageState extends State<EventsListPage> {
           ),
         ],
       ),
-      floatingActionButton: widget.venueMode
+      floatingActionButton: _canEditVenue
           ? FloatingActionButton(
               onPressed: () async {
                 final res = await context.push<bool?>(

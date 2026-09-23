@@ -185,6 +185,13 @@ class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerPr
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.calendar),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.location_on),
+            tooltip: l10n.browseVenues,
+            onPressed: () => context.push('/venues'),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,

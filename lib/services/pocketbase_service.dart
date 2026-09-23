@@ -126,6 +126,32 @@ class PocketBaseService {
     return null;
   }
 
+  /// Creates a `users` record (public signup) and adopts the session
+  /// PocketBase returns so the caller is signed in immediately.
+  Future<Map<String, dynamic>> signUp({
+    required String email,
+    required String password,
+    required String passwordConfirm,
+    String? name,
+  }) async {
+    final url = Uri.parse('$baseUrl/api/collections/users/records');
+    final body = <String, dynamic>{
+      'email': email,
+      'password': password,
+      'passwordConfirm': passwordConfirm,
+      if (name != null && name.isNotEmpty) 'name': name,
+    };
+    final resp = await _client
+        .post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode(body))
+        .timeout(const Duration(seconds: 15));
+    if (!(resp.statusCode >= 200 && resp.statusCode < 300)) {
+      throw PocketBaseException.fromBody(resp.statusCode, resp.body);
+    }
+    final created = Map<String, dynamic>.from(jsonDecode(resp.body) as Map);
+    // The record exists; authenticate to get a token/cookie for it.
+    return await login(email, password) ?? created;
+  }
+
   Future<String> createEvent(Event event) async {
     final url = Uri.parse('$baseUrl/api/collections/events/records');
     final body = event.toMap();

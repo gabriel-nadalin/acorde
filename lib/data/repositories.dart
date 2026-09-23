@@ -7,37 +7,53 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/event.dart';
 import '../services/pocketbase_service.dart';
 
-/// Cached performer records shared across screens.
+/// Records cached for the whole app session and shared across screens.
 ///
-/// Loads once per app session (or on explicit `force`), then serves the same
-/// records to every consumer, eliminating duplicate fetches.
-class PerformerRepository extends ChangeNotifier {
-  PerformerRepository({PocketBaseService? service})
-      : _service = service ?? PocketBaseService.shared;
+/// Loads once per session (or on explicit `force`) and serves the same records
+/// to every consumer, eliminating duplicate fetches.
+///
+/// Concurrent [load] calls share a single in-flight fetch. Returning early
+/// while a fetch is in flight would let a caller that arrives mid-load — a
+/// screen mounting right after [AuthController.refresh] kicked off the
+/// startup fetch — read an empty list instead of the records it asked for.
+/// Awaiting the shared future is the same dedup pattern [EventRepository] uses
+/// per month.
+abstract class EntityRepository extends ChangeNotifier {
+  EntityRepository(this._service);
 
   final PocketBaseService _service;
+
+  /// Fetches this repository's records from the server.
+  Future<List<Map<String, dynamic>>> fetch();
+
   List<Map<String, dynamic>> _items = [];
   bool _loading = false;
   bool _loaded = false;
+  Future<void>? _inFlight;
 
   List<Map<String, dynamic>> get items => List.unmodifiable(_items);
   bool get loading => _loading;
   bool get loaded => _loaded;
 
   Map<String, dynamic>? byId(String id) {
-    for (final p in _items) {
-      if (p['id']?.toString() == id) return p;
+    for (final item in _items) {
+      if (item['id']?.toString() == id) return item;
     }
     return null;
   }
 
-  Future<void> load({bool force = false}) async {
-    if (_loading) return;
-    if (_loaded && !force) return;
+  /// Loads the records, awaiting an already-running fetch rather than
+  /// returning early. [force] refetches even after a successful load.
+  Future<void> load({bool force = false}) {
+    if (_loaded && !force) return Future.value();
+    return _inFlight ??= _load().whenComplete(() => _inFlight = null);
+  }
+
+  Future<void> _load() async {
     _loading = true;
     notifyListeners();
     try {
-      _items = await _service.getPerformers(perPage: 1000);
+      _items = await fetch();
       _loaded = true;
     } finally {
       _loading = false;
@@ -46,40 +62,20 @@ class PerformerRepository extends ChangeNotifier {
   }
 }
 
+/// Cached performer records shared across screens.
+class PerformerRepository extends EntityRepository {
+  PerformerRepository({PocketBaseService? service}) : super(service ?? PocketBaseService.shared);
+
+  @override
+  Future<List<Map<String, dynamic>>> fetch() => _service.getPerformers(perPage: 1000);
+}
+
 /// Cached venue records shared across screens.
-class VenueRepository extends ChangeNotifier {
-  VenueRepository({PocketBaseService? service})
-      : _service = service ?? PocketBaseService.shared;
+class VenueRepository extends EntityRepository {
+  VenueRepository({PocketBaseService? service}) : super(service ?? PocketBaseService.shared);
 
-  final PocketBaseService _service;
-  List<Map<String, dynamic>> _items = [];
-  bool _loading = false;
-  bool _loaded = false;
-
-  List<Map<String, dynamic>> get items => List.unmodifiable(_items);
-  bool get loading => _loading;
-  bool get loaded => _loaded;
-
-  Map<String, dynamic>? byId(String id) {
-    for (final v in _items) {
-      if (v['id']?.toString() == id) return v;
-    }
-    return null;
-  }
-
-  Future<void> load({bool force = false}) async {
-    if (_loading) return;
-    if (_loaded && !force) return;
-    _loading = true;
-    notifyListeners();
-    try {
-      _items = await _service.getVenues(perPage: 1000);
-      _loaded = true;
-    } finally {
-      _loading = false;
-      notifyListeners();
-    }
-  }
+  @override
+  Future<List<Map<String, dynamic>>> fetch() => _service.getVenues(perPage: 1000);
 }
 
 /// Month-scoped event cache. Mutations reload the cached month so the
@@ -275,6 +271,27 @@ class AuthController extends ChangeNotifier {
     await refresh();
     notifyListeners();
     return true;
+  }
+
+  /// Creates an account and adopts the resulting session.
+  ///
+  /// Lets [PocketBaseException] escape so the signup screen can show
+  /// PocketBase's own rejection wording (e.g. an already-registered email).
+  Future<void> register({
+    required String email,
+    required String password,
+    required String passwordConfirm,
+    String? name,
+  }) async {
+    _user = await _service.signUp(
+      email: email,
+      password: password,
+      passwordConfirm: passwordConfirm,
+      name: name,
+    );
+    await _persistSession();
+    await refresh();
+    notifyListeners();
   }
 
   /// Restores a persisted session (user + auth token/cookie) so the app can

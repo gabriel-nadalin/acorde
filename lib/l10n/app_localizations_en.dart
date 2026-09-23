@@ -27,6 +27,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginFailed => 'Login failed — check your email and password.';
 
   @override
+  String get signUpTitle => 'Create account';
+
+  @override
+  String get signUpAction => 'Create account';
+
+  @override
+  String get haveAccountSignIn => 'Already have an account? Sign in';
+
+  @override
+  String get nameLabel => 'Name (optional)';
+
+  @override
+  String get confirmPassword => 'Confirm password';
+
+  @override
+  String get emailRequired => 'Enter your email';
+
+  @override
+  String get passwordMinLength => 'Use at least 8 characters';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get signUpFailed => 'Could not create the account.';
+
+  @override
+  String get browseVenues => 'Browse venues';
+
+  @override
+  String get venuesTitle => 'Venues';
+
+  @override
+  String get signOut => 'Sign out';
+
+  @override
   String get retry => 'Retry';
 
   @override

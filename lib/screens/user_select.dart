@@ -27,7 +27,7 @@ class _UserSelectPageState extends State<UserSelectPage> {
       // the user's calendar instead of asking to sign in again.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        context.go(auth.myPerformers.isEmpty && auth.myVenues.isEmpty ? '/dashboard' : '/calendar');
+        context.go(auth.myPerformers.isEmpty && auth.myVenues.isEmpty ? '/venues' : '/calendar');
       });
     }
   }
@@ -111,6 +111,11 @@ class _UserSelectPageState extends State<UserSelectPage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(l10n.signIn),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _submitting ? null : () => context.go('/signup'),
+                  child: Text(l10n.signUpAction),
                 ),
               ],
             ),

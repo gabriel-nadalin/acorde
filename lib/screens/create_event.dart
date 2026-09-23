@@ -35,7 +35,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
   String? _selectedVenueName;
 
   PerformerRepository get _performersRepo => context.read<AuthController>().performers;
-  VenueRepository get _venuesRepo => context.read<AuthController>().venues;
 
   @override
   void dispose() {
@@ -91,9 +90,12 @@ class _CreateEventPageState extends State<CreateEventPage> {
   }
 
   Future<List<Map<String, dynamic>>> _loadVenues() async {
-    final repo = _venuesRepo;
-    await repo.load();
-    return repo.items;
+    // Only venues this user manages: creating an event at any other venue is
+    // rejected by the server (pb_hooks/events.guard.pb.js), so the picker must
+    // not offer one.
+    final auth = context.read<AuthController>();
+    await auth.venues.load();
+    return auth.myVenues;
   }
 
   void _togglePerformer(String id, String name) {

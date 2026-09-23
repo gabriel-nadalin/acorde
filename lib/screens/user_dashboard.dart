@@ -47,6 +47,13 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.location_on),
+            tooltip: l10n.browseVenues,
+            onPressed: () {
+              context.push('/venues');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               context.read<AuthController>().logout();
