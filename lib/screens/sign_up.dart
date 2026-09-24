@@ -4,14 +4,14 @@ import 'package:provider/provider.dart';
 
 import '../data/repositories.dart';
 import '../l10n/app_localizations.dart';
-import '../services/pocketbase_service.dart';
+import '../utils/error_text.dart';
 
 /// Public account creation against the PocketBase `users` collection.
 ///
 /// Registration is open because the collection's `createRule` is "" (see
 /// pb_hooks/events.guard.pb.js for why writes then need the ownership check).
-/// PocketBase also signs the new user in, so a successful signup drops
-/// straight into the venue list instead of bouncing back to sign-in.
+/// PocketBase also signs the new user in, so a successful signup drops straight
+/// into the app.
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
@@ -26,6 +26,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
   bool _submitting = false;
+  bool _obscure = true;
 
   /// PocketBase's default minimum for its `password` field.
   static const int _minPasswordLength = 8;
@@ -45,10 +46,10 @@ class _SignUpPageState extends State<SignUpPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _submitting = true);
-    final auth = context.read<AuthController>();
+    final session = context.read<SessionController>();
     String? error;
     try {
-      await auth.register(
+      await session.register(
         email: _email.text.trim(),
         password: _password.text,
         passwordConfirm: _confirmPassword.text,
@@ -57,27 +58,37 @@ class _SignUpPageState extends State<SignUpPage> {
     } catch (e) {
       // PocketBase explains rejections itself (e.g. an already-used email), so
       // show its wording rather than a generic failure.
-      error = e is PocketBaseException ? e.message : null;
+      error = errorText(l10n, e);
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
 
     if (!mounted) return;
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.errorWithMessage(error))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
-    if (auth.user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.signUpFailed)),
-      );
+    if (session.user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.signUpFailed)));
       return;
     }
-    // A brand-new account manages no venues and belongs to no performers, so
-    // send it to venue browsing — that is the one list every account can use.
-    context.go('/venues');
+    try {
+      // A brand-new account manages no venues and belongs to no performers.
+      // Refresh so a pending invitation addressed to this email is claimed and
+      // the router can land the user on their calendar instead of the list.
+      await context.read<AssignmentsController>().refresh();
+    } catch (_) {
+      // Best effort: the venue list is always available as a fallback.
+    }
+    if (!mounted) return;
+    final assignments = context.read<AssignmentsController>();
+    final has =
+        assignments.myPerformers.isNotEmpty || assignments.myVenues.isNotEmpty;
+    context.go(has ? '/calendar' : '/venues');
   }
 
   @override
@@ -109,28 +120,40 @@ class _SignUpPageState extends State<SignUpPage> {
                       autofillHints: const [AutofillHints.email],
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(labelText: l10n.email),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? l10n.emailRequired : null,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? l10n.emailRequired
+                          : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _password,
-                      obscureText: true,
+                      obscureText: _obscure,
                       autofillHints: const [AutofillHints.newPassword],
                       textInputAction: TextInputAction.next,
-                      decoration: InputDecoration(labelText: l10n.password),
-                      validator: (v) => (v == null || v.length < _minPasswordLength)
+                      decoration: InputDecoration(
+                        labelText: l10n.password,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscure ? Icons.visibility : Icons.visibility_off,
+                          ),
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                        ),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.length < _minPasswordLength)
                           ? l10n.passwordMinLength
                           : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _confirmPassword,
-                      obscureText: true,
+                      obscureText: _obscure,
                       autofillHints: const [AutofillHints.newPassword],
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _submit(),
-                      decoration: InputDecoration(labelText: l10n.confirmPassword),
+                      decoration: InputDecoration(
+                        labelText: l10n.confirmPassword,
+                      ),
                       validator: (v) =>
                           v != _password.text ? l10n.passwordsDoNotMatch : null,
                     ),

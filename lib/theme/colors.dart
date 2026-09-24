@@ -16,10 +16,14 @@ class AppColors {
   static const Color _otherLight = Color(0xFF546E7A);
   static const Color _otherDark = Color(0xFF90A4AE);
 
-  static Color performer(BuildContext context) => _resolve(context, _performerLight, _performerDark);
-  static Color venue(BuildContext context) => _resolve(context, _venueLight, _venueDark);
-  static Color both(BuildContext context) => _resolve(context, _bothLight, _bothDark);
-  static Color other(BuildContext context) => _resolve(context, _otherLight, _otherDark);
+  static Color performer(BuildContext context) =>
+      _resolve(context, _performerLight, _performerDark);
+  static Color venue(BuildContext context) =>
+      _resolve(context, _venueLight, _venueDark);
+  static Color both(BuildContext context) =>
+      _resolve(context, _bothLight, _bothDark);
+  static Color other(BuildContext context) =>
+      _resolve(context, _otherLight, _otherDark);
 
   static Color _resolve(BuildContext context, Color light, Color dark) =>
       Theme.of(context).brightness == Brightness.dark ? dark : light;

@@ -1,7 +1,11 @@
 # Configuration for `flutter gen-l10n` (also run implicitly when
 # `generate: true` is set in pubspec.yaml).
 arb-dir: lib/l10n
-template-arb-file: app_en.arb
+# Portuguese is the template AND the only shipped locale. The template is the file
+# `flutter gen-l10n` generates the base class from and the one a missing key is
+# reported against, so pointing it at the locale we actually ship keeps the two
+# from being able to disagree.
+template-arb-file: app_pt.arb
 output-localization-file: app_localizations.dart
 output-class: AppLocalizations
 # Generated code lives next to the ARB files and is imported relatively, so it

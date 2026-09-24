@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'app_localizations_en.dart';
+import 'app_localizations_pt.dart';
 
 // ignore_for_file: type=lint
 
@@ -92,445 +92,1219 @@ abstract class AppLocalizations {
       ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('en')];
+  static const List<Locale> supportedLocales = <Locale>[Locale('pt')];
 
   /// No description provided for @appTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Event Calendar'**
+  /// In pt, this message translates to:
+  /// **'Agenda de Eventos'**
   String get appTitle;
 
   /// No description provided for @signIn.
   ///
-  /// In en, this message translates to:
-  /// **'Sign In'**
+  /// In pt, this message translates to:
+  /// **'Entrar'**
   String get signIn;
 
   /// No description provided for @email.
   ///
-  /// In en, this message translates to:
-  /// **'Email'**
+  /// In pt, this message translates to:
+  /// **'E-mail'**
   String get email;
 
   /// No description provided for @password.
   ///
-  /// In en, this message translates to:
-  /// **'Password'**
+  /// In pt, this message translates to:
+  /// **'Senha'**
   String get password;
 
   /// No description provided for @enterEmailAndPassword.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your email and password.'**
+  /// In pt, this message translates to:
+  /// **'Informe seu e-mail e sua senha.'**
   String get enterEmailAndPassword;
 
   /// No description provided for @loginFailed.
   ///
-  /// In en, this message translates to:
-  /// **'Login failed — check your email and password.'**
+  /// In pt, this message translates to:
+  /// **'Não foi possível entrar — verifique seu e-mail e sua senha.'**
   String get loginFailed;
+
+  /// No description provided for @invalidCredentials.
+  ///
+  /// In pt, this message translates to:
+  /// **'E-mail ou senha incorretos.'**
+  String get invalidCredentials;
+
+  /// No description provided for @backendUnreachable.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível acessar o servidor. Verifique sua conexão e tente de novo.'**
+  String get backendUnreachable;
+
+  /// No description provided for @sessionExpired.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sua sessão expirou. Entre novamente.'**
+  String get sessionExpired;
+
+  /// No description provided for @requestTimedOut.
+  ///
+  /// In pt, this message translates to:
+  /// **'O servidor demorou demais para responder.'**
+  String get requestTimedOut;
+
+  /// No description provided for @serverError.
+  ///
+  /// In pt, this message translates to:
+  /// **'O servidor retornou um erro.'**
+  String get serverError;
+
+  /// No description provided for @forbidden.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você não tem permissão para fazer isso.'**
+  String get forbidden;
+
+  /// No description provided for @notFound.
+  ///
+  /// In pt, this message translates to:
+  /// **'Esse item não existe mais.'**
+  String get notFound;
 
   /// No description provided for @signUpTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Create account'**
+  /// In pt, this message translates to:
+  /// **'Criar conta'**
   String get signUpTitle;
 
   /// No description provided for @signUpAction.
   ///
-  /// In en, this message translates to:
-  /// **'Create account'**
+  /// In pt, this message translates to:
+  /// **'Criar conta'**
   String get signUpAction;
 
   /// No description provided for @haveAccountSignIn.
   ///
-  /// In en, this message translates to:
-  /// **'Already have an account? Sign in'**
+  /// In pt, this message translates to:
+  /// **'Já tem uma conta? Entrar'**
   String get haveAccountSignIn;
 
   /// No description provided for @nameLabel.
   ///
-  /// In en, this message translates to:
-  /// **'Name (optional)'**
+  /// In pt, this message translates to:
+  /// **'Nome (opcional)'**
   String get nameLabel;
 
   /// No description provided for @confirmPassword.
   ///
-  /// In en, this message translates to:
-  /// **'Confirm password'**
+  /// In pt, this message translates to:
+  /// **'Confirmar senha'**
   String get confirmPassword;
 
   /// No description provided for @emailRequired.
   ///
-  /// In en, this message translates to:
-  /// **'Enter your email'**
+  /// In pt, this message translates to:
+  /// **'Informe seu e-mail'**
   String get emailRequired;
 
   /// No description provided for @passwordMinLength.
   ///
-  /// In en, this message translates to:
-  /// **'Use at least 8 characters'**
+  /// In pt, this message translates to:
+  /// **'Use pelo menos 8 caracteres'**
   String get passwordMinLength;
 
   /// No description provided for @passwordsDoNotMatch.
   ///
-  /// In en, this message translates to:
-  /// **'Passwords do not match'**
+  /// In pt, this message translates to:
+  /// **'As senhas não coincidem'**
   String get passwordsDoNotMatch;
 
   /// No description provided for @signUpFailed.
   ///
-  /// In en, this message translates to:
-  /// **'Could not create the account.'**
+  /// In pt, this message translates to:
+  /// **'Não foi possível criar a conta.'**
   String get signUpFailed;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In pt, this message translates to:
+  /// **'Esqueceu a senha?'**
+  String get forgotPassword;
+
+  /// No description provided for @guestSignIn.
+  ///
+  /// In pt, this message translates to:
+  /// **'Entrar como visitante'**
+  String get guestSignIn;
+
+  /// No description provided for @guestSignInHint.
+  ///
+  /// In pt, this message translates to:
+  /// **'Cria uma conta temporária, sem e-mail nem senha.'**
+  String get guestSignInHint;
+
+  /// No description provided for @guestAccountName.
+  ///
+  /// In pt, this message translates to:
+  /// **'Visitante'**
+  String get guestAccountName;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Redefinir senha'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordIntro.
+  ///
+  /// In pt, this message translates to:
+  /// **'Informe seu e-mail e enviaremos um link para você escolher uma nova senha.'**
+  String get resetPasswordIntro;
+
+  /// No description provided for @sendResetLink.
+  ///
+  /// In pt, this message translates to:
+  /// **'Enviar link'**
+  String get sendResetLink;
+
+  /// No description provided for @resetLinkSent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Se esse endereço tiver uma conta, o link de redefinição está a caminho.'**
+  String get resetLinkSent;
+
+  /// No description provided for @resetMailUnavailable.
+  ///
+  /// In pt, this message translates to:
+  /// **'Este servidor não tem e-mail configurado, então o link não pode ser enviado. Peça a um administrador para redefinir sua senha.'**
+  String get resetMailUnavailable;
+
+  /// No description provided for @newPasswordTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Escolha uma nova senha'**
+  String get newPasswordTitle;
+
+  /// No description provided for @setNewPassword.
+  ///
+  /// In pt, this message translates to:
+  /// **'Definir nova senha'**
+  String get setNewPassword;
+
+  /// No description provided for @passwordChanged.
+  ///
+  /// In pt, this message translates to:
+  /// **'Senha alterada. Entre com a nova senha.'**
+  String get passwordChanged;
+
+  /// No description provided for @resetLinkIncomplete.
+  ///
+  /// In pt, this message translates to:
+  /// **'Este link de redefinição está incompleto. Abra novamente o link do seu e-mail.'**
+  String get resetLinkIncomplete;
 
   /// No description provided for @browseVenues.
   ///
-  /// In en, this message translates to:
-  /// **'Browse venues'**
+  /// In pt, this message translates to:
+  /// **'Explorar locais'**
   String get browseVenues;
 
   /// No description provided for @venuesTitle.
   ///
-  /// In en, this message translates to:
-  /// **'Venues'**
+  /// In pt, this message translates to:
+  /// **'Locais'**
   String get venuesTitle;
 
   /// No description provided for @signOut.
   ///
-  /// In en, this message translates to:
-  /// **'Sign out'**
+  /// In pt, this message translates to:
+  /// **'Sair'**
   String get signOut;
 
   /// No description provided for @retry.
   ///
-  /// In en, this message translates to:
-  /// **'Retry'**
+  /// In pt, this message translates to:
+  /// **'Tentar de novo'**
   String get retry;
 
   /// No description provided for @couldNotLoadData.
   ///
-  /// In en, this message translates to:
-  /// **'Could not load data'**
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar os dados'**
   String get couldNotLoadData;
 
-  /// No description provided for @dashboardTitle.
+  /// No description provided for @couldNotSave.
   ///
-  /// In en, this message translates to:
-  /// **'Dashboard — {name}'**
-  String dashboardTitle(String name);
+  /// In pt, this message translates to:
+  /// **'Não foi possível salvar'**
+  String get couldNotSave;
 
-  /// No description provided for @userFallback.
+  /// No description provided for @couldNotDelete.
   ///
-  /// In en, this message translates to:
-  /// **'User'**
-  String get userFallback;
+  /// In pt, this message translates to:
+  /// **'Não foi possível excluir'**
+  String get couldNotDelete;
 
-  /// No description provided for @untitled.
+  /// No description provided for @cancel.
   ///
-  /// In en, this message translates to:
-  /// **'Untitled'**
-  String get untitled;
+  /// In pt, this message translates to:
+  /// **'Cancelar'**
+  String get cancel;
 
-  /// No description provided for @myPerformers.
+  /// No description provided for @close.
   ///
-  /// In en, this message translates to:
-  /// **'My Performers'**
-  String get myPerformers;
+  /// In pt, this message translates to:
+  /// **'Fechar'**
+  String get close;
 
-  /// No description provided for @performers.
+  /// No description provided for @edit.
   ///
-  /// In en, this message translates to:
-  /// **'Performers'**
-  String get performers;
+  /// In pt, this message translates to:
+  /// **'Editar'**
+  String get edit;
 
-  /// No description provided for @myVenues.
+  /// No description provided for @delete.
   ///
-  /// In en, this message translates to:
-  /// **'My Venues'**
-  String get myVenues;
+  /// In pt, this message translates to:
+  /// **'Excluir'**
+  String get delete;
 
-  /// No description provided for @noPerformerProfiles.
+  /// No description provided for @add.
   ///
-  /// In en, this message translates to:
-  /// **'No performer profiles assigned'**
-  String get noPerformerProfiles;
-
-  /// No description provided for @noVenueProfiles.
-  ///
-  /// In en, this message translates to:
-  /// **'No venue profiles assigned'**
-  String get noVenueProfiles;
-
-  /// No description provided for @calendar.
-  ///
-  /// In en, this message translates to:
-  /// **'Calendar'**
-  String get calendar;
-
-  /// No description provided for @combined.
-  ///
-  /// In en, this message translates to:
-  /// **'Combined'**
-  String get combined;
-
-  /// No description provided for @performer.
-  ///
-  /// In en, this message translates to:
-  /// **'Performer'**
-  String get performer;
-
-  /// No description provided for @venue.
-  ///
-  /// In en, this message translates to:
-  /// **'Venue'**
-  String get venue;
-
-  /// No description provided for @both.
-  ///
-  /// In en, this message translates to:
-  /// **'Both'**
-  String get both;
-
-  /// No description provided for @newEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'New event'**
-  String get newEvent;
-
-  /// No description provided for @newEventForPerformer.
-  ///
-  /// In en, this message translates to:
-  /// **'New event (performer)'**
-  String get newEventForPerformer;
-
-  /// No description provided for @newEventForVenue.
-  ///
-  /// In en, this message translates to:
-  /// **'New event (venue)'**
-  String get newEventForVenue;
-
-  /// No description provided for @createForPerformer.
-  ///
-  /// In en, this message translates to:
-  /// **'Create for performer'**
-  String get createForPerformer;
-
-  /// No description provided for @createForVenue.
-  ///
-  /// In en, this message translates to:
-  /// **'Create for venue'**
-  String get createForVenue;
-
-  /// No description provided for @calendarPrevMonth.
-  ///
-  /// In en, this message translates to:
-  /// **'Previous month'**
-  String get calendarPrevMonth;
-
-  /// No description provided for @calendarNextMonth.
-  ///
-  /// In en, this message translates to:
-  /// **'Next month'**
-  String get calendarNextMonth;
-
-  /// No description provided for @calendarDayFree.
-  ///
-  /// In en, this message translates to:
-  /// **'{date}, no bookings'**
-  String calendarDayFree(String date);
-
-  /// No description provided for @calendarDayPerformer.
-  ///
-  /// In en, this message translates to:
-  /// **'{date}, performer booking'**
-  String calendarDayPerformer(String date);
-
-  /// No description provided for @calendarDayVenue.
-  ///
-  /// In en, this message translates to:
-  /// **'{date}, venue booking'**
-  String calendarDayVenue(String date);
-
-  /// No description provided for @calendarDayBoth.
-  ///
-  /// In en, this message translates to:
-  /// **'{date}, performer and venue bookings'**
-  String calendarDayBoth(String date);
-
-  /// No description provided for @calendarDayOther.
-  ///
-  /// In en, this message translates to:
-  /// **'{date}, event'**
-  String calendarDayOther(String date);
-
-  /// No description provided for @createEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'Create Event'**
-  String get createEvent;
-
-  /// No description provided for @editEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'Edit Event'**
-  String get editEvent;
-
-  /// No description provided for @titleLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get titleLabel;
-
-  /// No description provided for @descriptionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Description'**
-  String get descriptionLabel;
-
-  /// No description provided for @startLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Start'**
-  String get startLabel;
-
-  /// No description provided for @endLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'End'**
-  String get endLabel;
+  /// In pt, this message translates to:
+  /// **'Adicionar'**
+  String get add;
 
   /// No description provided for @save.
   ///
-  /// In en, this message translates to:
-  /// **'Save'**
+  /// In pt, this message translates to:
+  /// **'Salvar'**
   String get save;
 
   /// No description provided for @titleRequired.
   ///
-  /// In en, this message translates to:
-  /// **'Enter a title'**
+  /// In pt, this message translates to:
+  /// **'Informe um título'**
   String get titleRequired;
+
+  /// No description provided for @dashboardTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Painel — {name}'**
+  String dashboardTitle(Object name);
+
+  /// No description provided for @userFallback.
+  ///
+  /// In pt, this message translates to:
+  /// **'Usuário'**
+  String get userFallback;
+
+  /// No description provided for @untitled.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sem título'**
+  String get untitled;
+
+  /// No description provided for @myPerformers.
+  ///
+  /// In pt, this message translates to:
+  /// **'Meus artistas'**
+  String get myPerformers;
+
+  /// No description provided for @performers.
+  ///
+  /// In pt, this message translates to:
+  /// **'Artistas'**
+  String get performers;
+
+  /// No description provided for @myVenues.
+  ///
+  /// In pt, this message translates to:
+  /// **'Meus locais'**
+  String get myVenues;
+
+  /// No description provided for @noPerformerProfiles.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nenhum perfil de artista atribuído'**
+  String get noPerformerProfiles;
+
+  /// No description provided for @noVenueProfiles.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nenhum perfil de local atribuído'**
+  String get noVenueProfiles;
+
+  /// No description provided for @myEntities.
+  ///
+  /// In pt, this message translates to:
+  /// **'Minhas entidades'**
+  String get myEntities;
+
+  /// No description provided for @addVenue.
+  ///
+  /// In pt, this message translates to:
+  /// **'Adicionar local'**
+  String get addVenue;
+
+  /// No description provided for @addPerformer.
+  ///
+  /// In pt, this message translates to:
+  /// **'Adicionar artista'**
+  String get addPerformer;
+
+  /// No description provided for @manageVenue.
+  ///
+  /// In pt, this message translates to:
+  /// **'Gerenciar local'**
+  String get manageVenue;
+
+  /// No description provided for @managePerformer.
+  ///
+  /// In pt, this message translates to:
+  /// **'Gerenciar artista'**
+  String get managePerformer;
+
+  /// No description provided for @pendingInvite.
+  ///
+  /// In pt, this message translates to:
+  /// **'Convite pendente'**
+  String get pendingInvite;
+
+  /// No description provided for @pendingInvites.
+  ///
+  /// In pt, this message translates to:
+  /// **'Convites pendentes'**
+  String get pendingInvites;
+
+  /// No description provided for @calendar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Calendário'**
+  String get calendar;
+
+  /// No description provided for @combined.
+  ///
+  /// In pt, this message translates to:
+  /// **'Combinado'**
+  String get combined;
+
+  /// No description provided for @performer.
+  ///
+  /// In pt, this message translates to:
+  /// **'Artista'**
+  String get performer;
+
+  /// No description provided for @venue.
+  ///
+  /// In pt, this message translates to:
+  /// **'Local'**
+  String get venue;
+
+  /// No description provided for @both.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ambos'**
+  String get both;
+
+  /// No description provided for @newEvent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Novo evento'**
+  String get newEvent;
+
+  /// No description provided for @newEventForPerformer.
+  ///
+  /// In pt, this message translates to:
+  /// **'Novo evento (artista)'**
+  String get newEventForPerformer;
+
+  /// No description provided for @newEventForVenue.
+  ///
+  /// In pt, this message translates to:
+  /// **'Novo evento (local)'**
+  String get newEventForVenue;
+
+  /// No description provided for @createForPerformer.
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar para artista'**
+  String get createForPerformer;
+
+  /// No description provided for @createForVenue.
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar para local'**
+  String get createForVenue;
+
+  /// No description provided for @calendarPrevMonth.
+  ///
+  /// In pt, this message translates to:
+  /// **'Mês anterior'**
+  String get calendarPrevMonth;
+
+  /// No description provided for @calendarNextMonth.
+  ///
+  /// In pt, this message translates to:
+  /// **'Próximo mês'**
+  String get calendarNextMonth;
+
+  /// No description provided for @calendarDayFree.
+  ///
+  /// In pt, this message translates to:
+  /// **'{date}, sem eventos'**
+  String calendarDayFree(Object date);
+
+  /// No description provided for @calendarDayPerformer.
+  ///
+  /// In pt, this message translates to:
+  /// **'{date}, evento de artista'**
+  String calendarDayPerformer(Object date);
+
+  /// No description provided for @calendarDayVenue.
+  ///
+  /// In pt, this message translates to:
+  /// **'{date}, evento de local'**
+  String calendarDayVenue(Object date);
+
+  /// No description provided for @calendarDayBoth.
+  ///
+  /// In pt, this message translates to:
+  /// **'{date}, eventos de artista e de local'**
+  String calendarDayBoth(Object date);
+
+  /// No description provided for @calendarDayOther.
+  ///
+  /// In pt, this message translates to:
+  /// **'{date}, evento'**
+  String calendarDayOther(Object date);
+
+  /// No description provided for @calendarGridLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Calendário de {month}'**
+  String calendarGridLabel(Object month);
+
+  /// No description provided for @calendarHint.
+  ///
+  /// In pt, this message translates to:
+  /// **'Use as teclas de seta para navegar entre os dias e Enter para abrir um dia.'**
+  String get calendarHint;
+
+  /// No description provided for @createEvent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar evento'**
+  String get createEvent;
+
+  /// No description provided for @editEvent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Editar evento'**
+  String get editEvent;
+
+  /// No description provided for @titleLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Título'**
+  String get titleLabel;
+
+  /// No description provided for @descriptionLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Descrição'**
+  String get descriptionLabel;
+
+  /// No description provided for @startLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Início'**
+  String get startLabel;
+
+  /// No description provided for @endLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Término'**
+  String get endLabel;
 
   /// No description provided for @endMustBeAfterStart.
   ///
-  /// In en, this message translates to:
-  /// **'End must be after start'**
+  /// In pt, this message translates to:
+  /// **'O término deve ser depois do início'**
   String get endMustBeAfterStart;
 
   /// No description provided for @eventCreated.
   ///
-  /// In en, this message translates to:
-  /// **'Event created'**
+  /// In pt, this message translates to:
+  /// **'Evento criado'**
   String get eventCreated;
 
   /// No description provided for @eventUpdated.
   ///
-  /// In en, this message translates to:
-  /// **'Event updated'**
+  /// In pt, this message translates to:
+  /// **'Evento atualizado'**
   String get eventUpdated;
+
+  /// No description provided for @eventVenueMissing.
+  ///
+  /// In pt, this message translates to:
+  /// **'O local não existe mais'**
+  String get eventVenueMissing;
+
+  /// No description provided for @eventPerformerMissing.
+  ///
+  /// In pt, this message translates to:
+  /// **'O artista não existe mais'**
+  String get eventPerformerMissing;
+
+  /// No description provided for @lastUpdated.
+  ///
+  /// In pt, this message translates to:
+  /// **'Atualizado em {date}'**
+  String lastUpdated(Object date);
 
   /// No description provided for @errorWithMessage.
   ///
-  /// In en, this message translates to:
-  /// **'Error: {message}'**
-  String errorWithMessage(String message);
+  /// In pt, this message translates to:
+  /// **'Erro: {message}'**
+  String errorWithMessage(Object message);
 
   /// No description provided for @searchVenues.
   ///
-  /// In en, this message translates to:
-  /// **'Search venues'**
+  /// In pt, this message translates to:
+  /// **'Buscar locais'**
   String get searchVenues;
 
   /// No description provided for @searchPerformers.
   ///
-  /// In en, this message translates to:
-  /// **'Search performers'**
+  /// In pt, this message translates to:
+  /// **'Buscar artistas'**
   String get searchPerformers;
 
   /// No description provided for @noVenuesFound.
   ///
-  /// In en, this message translates to:
-  /// **'No venues found'**
+  /// In pt, this message translates to:
+  /// **'Nenhum local encontrado'**
   String get noVenuesFound;
 
   /// No description provided for @noPerformersFound.
   ///
-  /// In en, this message translates to:
-  /// **'No performers found'**
+  /// In pt, this message translates to:
+  /// **'Nenhum artista encontrado'**
   String get noPerformersFound;
 
   /// No description provided for @couldNotLoadVenues.
   ///
-  /// In en, this message translates to:
-  /// **'Could not load venues'**
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar os locais'**
   String get couldNotLoadVenues;
 
   /// No description provided for @couldNotLoadPerformers.
   ///
-  /// In en, this message translates to:
-  /// **'Could not load performers'**
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar os artistas'**
   String get couldNotLoadPerformers;
 
   /// No description provided for @noVenueSelected.
   ///
-  /// In en, this message translates to:
-  /// **'No venue selected'**
+  /// In pt, this message translates to:
+  /// **'Nenhum local selecionado'**
   String get noVenueSelected;
 
   /// No description provided for @noneSelected.
   ///
-  /// In en, this message translates to:
-  /// **'None selected'**
+  /// In pt, this message translates to:
+  /// **'Nenhum selecionado'**
   String get noneSelected;
 
   /// No description provided for @venueWithName.
   ///
-  /// In en, this message translates to:
-  /// **'Venue: {name}'**
-  String venueWithName(String name);
+  /// In pt, this message translates to:
+  /// **'Local: {name}'**
+  String venueWithName(Object name);
 
   /// No description provided for @venueCalendar.
   ///
-  /// In en, this message translates to:
-  /// **'Venue Calendar'**
+  /// In pt, this message translates to:
+  /// **'Calendário do local'**
   String get venueCalendar;
 
   /// No description provided for @myCalendar.
   ///
-  /// In en, this message translates to:
-  /// **'My Calendar'**
+  /// In pt, this message translates to:
+  /// **'Meu calendário'**
   String get myCalendar;
 
   /// No description provided for @performerCalendar.
   ///
-  /// In en, this message translates to:
-  /// **'Performer Calendar'**
+  /// In pt, this message translates to:
+  /// **'Calendário do artista'**
   String get performerCalendar;
 
   /// No description provided for @couldNotLoadEvents.
   ///
-  /// In en, this message translates to:
-  /// **'Could not load events'**
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar os eventos'**
   String get couldNotLoadEvents;
 
   /// No description provided for @offlineShowingCached.
   ///
-  /// In en, this message translates to:
-  /// **'Offline — showing cached events'**
+  /// In pt, this message translates to:
+  /// **'Offline — exibindo eventos em cache'**
   String get offlineShowingCached;
+
+  /// No description provided for @localCacheCorrupt.
+  ///
+  /// In pt, this message translates to:
+  /// **'Os dados em cache estavam ilegíveis e foram descartados'**
+  String get localCacheCorrupt;
+
+  /// No description provided for @reconnecting.
+  ///
+  /// In pt, this message translates to:
+  /// **'Reconectando…'**
+  String get reconnecting;
 
   /// No description provided for @noEvents.
   ///
-  /// In en, this message translates to:
-  /// **'No events'**
+  /// In pt, this message translates to:
+  /// **'Nenhum evento'**
   String get noEvents;
 
   /// No description provided for @addEvent.
   ///
-  /// In en, this message translates to:
-  /// **'Add Event'**
+  /// In pt, this message translates to:
+  /// **'Adicionar evento'**
   String get addEvent;
+
+  /// No description provided for @createVenue.
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar local'**
+  String get createVenue;
+
+  /// No description provided for @editVenue.
+  ///
+  /// In pt, this message translates to:
+  /// **'Editar local'**
+  String get editVenue;
+
+  /// No description provided for @createPerformer.
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar artista'**
+  String get createPerformer;
+
+  /// No description provided for @editPerformer.
+  ///
+  /// In pt, this message translates to:
+  /// **'Editar artista'**
+  String get editPerformer;
+
+  /// No description provided for @venueNameLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nome do local'**
+  String get venueNameLabel;
+
+  /// No description provided for @performerNameLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nome do artista'**
+  String get performerNameLabel;
+
+  /// No description provided for @addressLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Endereço'**
+  String get addressLabel;
+
+  /// No description provided for @contactLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Contato'**
+  String get contactLabel;
+
+  /// No description provided for @capacityLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Capacidade'**
+  String get capacityLabel;
+
+  /// No description provided for @timezoneLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Fuso horário'**
+  String get timezoneLabel;
+
+  /// No description provided for @typeLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Tipo'**
+  String get typeLabel;
+
+  /// No description provided for @entityCreated.
+  ///
+  /// In pt, this message translates to:
+  /// **'Salvo'**
+  String get entityCreated;
+
+  /// No description provided for @entityUpdated.
+  ///
+  /// In pt, this message translates to:
+  /// **'Salvo'**
+  String get entityUpdated;
+
+  /// No description provided for @entityDeleted.
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluído'**
+  String get entityDeleted;
+
+  /// No description provided for @confirmDeleteTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir {name}?'**
+  String confirmDeleteTitle(Object name);
+
+  /// No description provided for @confirmDeleteBody.
+  ///
+  /// In pt, this message translates to:
+  /// **'Isso não pode ser desfeito.'**
+  String get confirmDeleteBody;
+
+  /// No description provided for @managerSectionTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Gestores'**
+  String get managerSectionTitle;
+
+  /// No description provided for @memberSectionTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Membros'**
+  String get memberSectionTitle;
+
+  /// No description provided for @addManager.
+  ///
+  /// In pt, this message translates to:
+  /// **'Convidar gestor'**
+  String get addManager;
+
+  /// No description provided for @addMember.
+  ///
+  /// In pt, this message translates to:
+  /// **'Convidar membro'**
+  String get addMember;
+
+  /// No description provided for @inviteEmailLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'E-mail da conta'**
+  String get inviteEmailLabel;
+
+  /// No description provided for @inviteSent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Convite enviado para {email}'**
+  String inviteSent(Object email);
+
+  /// No description provided for @invitePendingHint.
+  ///
+  /// In pt, this message translates to:
+  /// **'A pessoa entra assim que fizer login.'**
+  String get invitePendingHint;
+
+  /// No description provided for @emailInvalid.
+  ///
+  /// In pt, this message translates to:
+  /// **'Informe um e-mail válido'**
+  String get emailInvalid;
+
+  /// No description provided for @couldNotInvite.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível enviar o convite'**
+  String get couldNotInvite;
+
+  /// No description provided for @listEmpty.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nada por aqui ainda'**
+  String get listEmpty;
+
+  /// No description provided for @repeatLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Repetir'**
+  String get repeatLabel;
+
+  /// No description provided for @repeatNone.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não se repete'**
+  String get repeatNone;
+
+  /// No description provided for @repeatDaily.
+  ///
+  /// In pt, this message translates to:
+  /// **'Diariamente'**
+  String get repeatDaily;
+
+  /// No description provided for @repeatWeekly.
+  ///
+  /// In pt, this message translates to:
+  /// **'Semanalmente'**
+  String get repeatWeekly;
+
+  /// No description provided for @repeatMonthly.
+  ///
+  /// In pt, this message translates to:
+  /// **'Mensalmente'**
+  String get repeatMonthly;
+
+  /// No description provided for @repeatIntervalLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Intervalo'**
+  String get repeatIntervalLabel;
+
+  /// No description provided for @repeatEndsLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Termina'**
+  String get repeatEndsLabel;
+
+  /// No description provided for @repeatEndsNever.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nunca'**
+  String get repeatEndsNever;
+
+  /// No description provided for @repeatEndsCount.
+  ///
+  /// In pt, this message translates to:
+  /// **'Depois de um número de ocorrências'**
+  String get repeatEndsCount;
+
+  /// No description provided for @repeatEndsUntil.
+  ///
+  /// In pt, this message translates to:
+  /// **'Em uma data'**
+  String get repeatEndsUntil;
+
+  /// No description provided for @repeatCountLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ocorrências'**
+  String get repeatCountLabel;
+
+  /// No description provided for @repeatUntilLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Até'**
+  String get repeatUntilLabel;
+
+  /// No description provided for @occurrenceCountLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ocorrências: {count}'**
+  String occurrenceCountLabel(Object count);
+
+  /// No description provided for @seriesCreated.
+  ///
+  /// In pt, this message translates to:
+  /// **'Eventos criados: {count}'**
+  String seriesCreated(Object count);
+
+  /// No description provided for @seriesPartial.
+  ///
+  /// In pt, this message translates to:
+  /// **'Criados: {created}. Já reservados: {failed}.'**
+  String seriesPartial(Object created, Object failed);
+
+  /// No description provided for @seriesPartialDetail.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não criados: {dates}'**
+  String seriesPartialDetail(Object dates);
+
+  /// No description provided for @repeatCountInvalid.
+  ///
+  /// In pt, this message translates to:
+  /// **'Informe um número entre 1 e 200'**
+  String get repeatCountInvalid;
+
+  /// No description provided for @duplicateExistsTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'{type} já existe: {name}'**
+  String duplicateExistsTitle(Object name, Object type);
+
+  /// No description provided for @duplicateClaimBody.
+  ///
+  /// In pt, this message translates to:
+  /// **'Registros duplicados dividem as reservas — a verificação de conflito de agenda compara os ids dos registros, então dois registros do mesmo lugar nunca veem os eventos um do outro. Se for o mesmo, reivindique este.'**
+  String get duplicateClaimBody;
+
+  /// No description provided for @duplicateAlreadyMineBody.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você já gerencia este.'**
+  String get duplicateAlreadyMineBody;
+
+  /// No description provided for @claimEntityAction.
+  ///
+  /// In pt, this message translates to:
+  /// **'Reivindicar'**
+  String get claimEntityAction;
+
+  /// No description provided for @openEntityAction.
+  ///
+  /// In pt, this message translates to:
+  /// **'Abrir'**
+  String get openEntityAction;
+
+  /// No description provided for @createAnywayAction.
+  ///
+  /// In pt, this message translates to:
+  /// **'Criar mesmo assim'**
+  String get createAnywayAction;
+
+  /// No description provided for @claimSucceeded.
+  ///
+  /// In pt, this message translates to:
+  /// **'Agora você gerencia {name}'**
+  String claimSucceeded(Object name);
+
+  /// No description provided for @rosterInvited.
+  ///
+  /// In pt, this message translates to:
+  /// **'Convidado'**
+  String get rosterInvited;
+
+  /// No description provided for @rosterActive.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ativo'**
+  String get rosterActive;
+
+  /// No description provided for @rosterApprove.
+  ///
+  /// In pt, this message translates to:
+  /// **'Aprovar'**
+  String get rosterApprove;
+
+  /// No description provided for @rosterReject.
+  ///
+  /// In pt, this message translates to:
+  /// **'Recusar'**
+  String get rosterReject;
+
+  /// No description provided for @rosterYou.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você'**
+  String get rosterYou;
+
+  /// No description provided for @roleManager.
+  ///
+  /// In pt, this message translates to:
+  /// **'Gestor'**
+  String get roleManager;
+
+  /// No description provided for @roleMember.
+  ///
+  /// In pt, this message translates to:
+  /// **'Membro'**
+  String get roleMember;
+
+  /// No description provided for @roleLabel.
+  ///
+  /// In pt, this message translates to:
+  /// **'Função'**
+  String get roleLabel;
+
+  /// No description provided for @changeRole.
+  ///
+  /// In pt, this message translates to:
+  /// **'Alterar função'**
+  String get changeRole;
+
+  /// No description provided for @inviteNeedsAcceptance.
+  ///
+  /// In pt, this message translates to:
+  /// **'A pessoa precisa aceitar o convite antes de agir sobre isto.'**
+  String get inviteNeedsAcceptance;
+
+  /// No description provided for @awaitingAcceptance.
+  ///
+  /// In pt, this message translates to:
+  /// **'Aguardando o aceite'**
+  String get awaitingAcceptance;
+
+  /// No description provided for @couldNotLoadRoster.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não foi possível carregar a equipe'**
+  String get couldNotLoadRoster;
+
+  /// No description provided for @rosterRequested.
+  ///
+  /// In pt, this message translates to:
+  /// **'Solicitou acesso'**
+  String get rosterRequested;
+
+  /// No description provided for @requestAccess.
+  ///
+  /// In pt, this message translates to:
+  /// **'Solicitar acesso'**
+  String get requestAccess;
+
+  /// No description provided for @requestSent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Solicitação enviada — um gestor precisa aprová-la'**
+  String get requestSent;
+
+  /// No description provided for @requestPending.
+  ///
+  /// In pt, this message translates to:
+  /// **'Sua solicitação aguarda aprovação'**
+  String get requestPending;
+
+  /// No description provided for @withdrawRequest.
+  ///
+  /// In pt, this message translates to:
+  /// **'Retirar solicitação'**
+  String get withdrawRequest;
+
+  /// No description provided for @accountExists.
+  ///
+  /// In pt, this message translates to:
+  /// **'{name} já tem uma conta — será pedido que aceite'**
+  String accountExists(Object name);
+
+  /// No description provided for @incomingRequestsTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Solicitações de acesso'**
+  String get incomingRequestsTitle;
+
+  /// No description provided for @approveRequest.
+  ///
+  /// In pt, this message translates to:
+  /// **'Aprovar'**
+  String get approveRequest;
+
+  /// No description provided for @rejectRequest.
+  ///
+  /// In pt, this message translates to:
+  /// **'Recusar'**
+  String get rejectRequest;
+
+  /// No description provided for @noAccessToManage.
+  ///
+  /// In pt, this message translates to:
+  /// **'Você ainda não gerencia isto'**
+  String get noAccessToManage;
+
+  /// No description provided for @reviewRequest.
+  ///
+  /// In pt, this message translates to:
+  /// **'Revisar'**
+  String get reviewRequest;
+
+  /// No description provided for @decideRequestAction.
+  ///
+  /// In pt, this message translates to:
+  /// **'Revisar'**
+  String get decideRequestAction;
+
+  /// No description provided for @browsePerformers.
+  ///
+  /// In pt, this message translates to:
+  /// **'Explorar artistas'**
+  String get browsePerformers;
+
+  /// No description provided for @upcomingEvents.
+  ///
+  /// In pt, this message translates to:
+  /// **'Próximos eventos'**
+  String get upcomingEvents;
+
+  /// No description provided for @upcomingTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Próximos'**
+  String get upcomingTitle;
+
+  /// No description provided for @openInCalendar.
+  ///
+  /// In pt, this message translates to:
+  /// **'Abrir no calendário'**
+  String get openInCalendar;
+
+  /// No description provided for @noUpcoming.
+  ///
+  /// In pt, this message translates to:
+  /// **'Não há nada por vir'**
+  String get noUpcoming;
+
+  /// No description provided for @deleteEvent.
+  ///
+  /// In pt, this message translates to:
+  /// **'Excluir evento'**
+  String get deleteEvent;
+
+  /// No description provided for @eventDeleted.
+  ///
+  /// In pt, this message translates to:
+  /// **'Evento excluído'**
+  String get eventDeleted;
+
+  /// No description provided for @deleteSeriesTitle.
+  ///
+  /// In pt, this message translates to:
+  /// **'Este evento se repete'**
+  String get deleteSeriesTitle;
+
+  /// No description provided for @deleteSeriesWhat.
+  ///
+  /// In pt, this message translates to:
+  /// **'O que deve ser excluído?'**
+  String get deleteSeriesWhat;
+
+  /// No description provided for @deleteSeriesOne.
+  ///
+  /// In pt, this message translates to:
+  /// **'Somente este evento'**
+  String get deleteSeriesOne;
+
+  /// No description provided for @deleteSeriesAll.
+  ///
+  /// In pt, this message translates to:
+  /// **'A série inteira ({count})'**
+  String deleteSeriesAll(Object count);
+
+  /// No description provided for @upcomingSeeAll.
+  ///
+  /// In pt, this message translates to:
+  /// **'Ver tudo'**
+  String get upcomingSeeAll;
+
+  /// No description provided for @back.
+  ///
+  /// In pt, this message translates to:
+  /// **'Voltar'**
+  String get back;
+
+  /// No description provided for @backToHome.
+  ///
+  /// In pt, this message translates to:
+  /// **'Voltar para minhas entidades'**
+  String get backToHome;
 }
 
 class _AppLocalizationsDelegate
@@ -544,7 +1318,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en'].contains(locale.languageCode);
+      <String>['pt'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -553,8 +1327,8 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'en':
-      return AppLocalizationsEn();
+    case 'pt':
+      return AppLocalizationsPt();
   }
 
   throw FlutterError(

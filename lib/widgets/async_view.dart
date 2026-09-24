@@ -48,6 +48,12 @@ class AsyncView<T> extends StatelessWidget {
         ),
       );
     }
-    return builder(context, snapshot.requireData);
+    // Not [AsyncSnapshot.requireData]: it treats a null value as "no data", and a
+    // `Future<void>` completes with exactly that. Screens that only need to know
+    // *that* a refresh finished use `AsyncView<void>` (the dashboard), so a
+    // completed snapshot with neither data nor error is the success case — and
+    // reading it through `requireData` threw `StateError: Snapshot has neither
+    // data nor error` on every single one of those renders.
+    return builder(context, snapshot.data as T);
   }
 }

@@ -1,206 +1,219 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../data/repositories.dart';
 import '../l10n/app_localizations.dart';
-import '../router_paths.dart';
+import '../models/performer.dart';
+import '../models/venue.dart';
+import '../nav/destinations.dart';
 import '../theme/colors.dart';
 import 'events_list.dart';
 
+/// Tabbed calendar: one combined tab plus one tab per assigned performer and
+/// venue.
+///
+/// The tab list is derived from [AssignmentsController], which is a
+/// [ChangeNotifier] — creating a venue changes the tabs, so this listens rather
+/// than reading once. `TabController.length` is fixed at construction, so a
+/// changed assignment list rebuilds the controller instead of mismatching it.
 class UserCalendarTabs extends StatefulWidget {
+  const UserCalendarTabs({super.key, this.initialIndex, this.initialMonth});
+
   final int? initialIndex;
-  const UserCalendarTabs({super.key, this.initialIndex});
+
+  /// Month to open every tab on (`?month=YYYY-MM`), or null for the current one.
+  ///
+  /// Applies to the whole tab set rather than to one tab: the tabs are views of
+  /// the same schedule, so opening them on different months would make switching
+  /// tabs silently change the date, which is the kind of surprise the tab strip
+  /// exists to avoid.
+  final DateTime? initialMonth;
 
   @override
   State<UserCalendarTabs> createState() => _UserCalendarTabsState();
 }
 
-class _UserCalendarTabsState extends State<UserCalendarTabs> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  int _version = 0; // bump to force child rebuilds after creates
+class _UserCalendarTabsState extends State<UserCalendarTabs>
+    with TickerProviderStateMixin {
+  late final AssignmentsController _assignments = context
+      .read<AssignmentsController>();
+  TabController? _tabController;
+  int _tabCount = 0;
 
-  List<Map<String, dynamic>> get _performers => context.read<AuthController>().myPerformers;
-  List<Map<String, dynamic>> get _venues => context.read<AuthController>().myVenues;
-
-  int get _tabsCount => 1 + _performers.length + _venues.length;
+  List<Performer> get _performers => _assignments.myPerformers;
+  List<Venue> get _venues => _assignments.myVenues;
 
   @override
   void initState() {
     super.initState();
-    final init = (widget.initialIndex != null && widget.initialIndex! >= 0 && widget.initialIndex! < _tabsCount) ? widget.initialIndex! : 0;
-    _tabController = TabController(length: _tabsCount, vsync: this, initialIndex: init);
-    _tabController.addListener(() => setState(() {}));
+    _assignments.addListener(_syncTabs);
+    _syncTabs();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _assignments.removeListener(_syncTabs);
+    _tabController?.dispose();
     super.dispose();
   }
 
-  Widget _tabLabel(String name, Color dotColor) {
-    return Tab(child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 8, height: 8, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
-      const SizedBox(width: 6),
-      Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
-    ]));
+  int get _tabsCount => 1 + _performers.length + _venues.length;
+
+  /// Rebuilds the [TabController] when the assignment list changes length.
+  ///
+  /// Reusing a controller whose `length` no longer matches its `TabBar` throws
+  /// during paint, so the controller is replaced rather than mutated.
+  void _syncTabs() {
+    final count = _tabsCount;
+    if (_tabController == null) {
+      final initial =
+          (widget.initialIndex != null &&
+              widget.initialIndex! >= 0 &&
+              widget.initialIndex! < count)
+          ? widget.initialIndex!
+          : 0;
+      _tabController = TabController(
+        length: count,
+        vsync: this,
+        initialIndex: initial,
+      );
+      _tabCount = count;
+      return;
+    }
+    if (count != _tabCount) {
+      final previousIndex = _tabController!.index;
+      _tabController!.dispose();
+      final next = previousIndex < count ? previousIndex : 0;
+      _tabController = TabController(
+        length: count,
+        vsync: this,
+        initialIndex: next,
+      );
+      _tabCount = count;
+    }
+    if (mounted) setState(() {});
   }
 
-  List<Widget> _buildTabs() {
+  Widget _tabLabel(String name, Color dotColor) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Flexible(child: Text(name, overflow: TextOverflow.ellipsis)),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildTabs(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tabs = <Widget>[Tab(text: l10n.combined)];
-    for (final p in _performers) {
-      final name = (p['name'] ?? p['id'] ?? l10n.performer).toString();
-      tabs.add(_tabLabel(name, AppColors.performer(context)));
+    return [
+      Tab(text: l10n.combined),
+      for (final p in _performers)
+        _tabLabel(p.displayName, AppColors.performer(context)),
+      for (final v in _venues)
+        _tabLabel(v.displayName, AppColors.venue(context)),
+    ];
+  }
+
+  /// Refetches every month the calendar has loaded, for the bar's refresh button.
+  ///
+  /// Failures are left to the pages: each reports its own (a stale banner, an
+  /// error view), and a snackbar here would say the same thing a second time.
+  Future<void> _refresh() async {
+    try {
+      await context.read<EventRepository>().refreshLoaded(force: true);
+    } catch (_) {
+      // See above.
     }
-    for (final v in _venues) {
-      final name = (v['name'] ?? v['id'] ?? l10n.venue).toString();
-      tabs.add(_tabLabel(name, AppColors.venue(context)));
-    }
-    return tabs;
   }
 
   List<Widget> _buildViews() {
-    final views = <Widget>[];
-    final perfIds = _performers.map((p) => p['id']?.toString() ?? '').where((s) => s.isNotEmpty).toList();
-    final venIds = _venues.map((v) => v['id']?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+    final performerIds = [
+      for (final p in _performers) p.id,
+    ].whereType<String>().toList();
+    final venueIds = [
+      for (final v in _venues) v.id,
+    ].whereType<String>().toList();
 
-    // combined view
-    views.add(EventsListPage(key: ValueKey('events-$_version-0'), myPerformerIds: perfIds.isNotEmpty ? perfIds : null, myVenueIds: venIds.isNotEmpty ? venIds : null, performerName: null));
-
-    var idx = 1;
-    for (final p in _performers) {
-      final id = p['id']?.toString() ?? '';
-      final name = p['name']?.toString();
-      views.add(EventsListPage(key: ValueKey('events-$_version-$idx'), myPerformerIds: id.isNotEmpty ? [id] : null, performerName: name));
-      idx++;
-    }
-
-    for (final v in _venues) {
-      final id = v['id']?.toString() ?? '';
-      final name = v['name']?.toString();
-      views.add(EventsListPage(key: ValueKey('events-$_version-$idx'), venueMode: true, venueId: id.isNotEmpty ? id : null, venueName: name));
-      idx++;
-    }
-
-    return views;
-  }
-
-  Future<void> _chooseAccountAndCreate() async {
-    final l10n = AppLocalizations.of(context);
-    final choice = await showModalBottomSheet<Map<String, String>>(context: context, builder: (ctx) {
-      return SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_performers.isNotEmpty) ...[
-              ListTile(title: Text(l10n.createForPerformer)),
-              ..._performers.map((p) {
-                final id = p['id']?.toString() ?? '';
-                final name = (p['name'] ?? id).toString();
-                return ListTile(
-                  title: Text(name),
-                  leading: const Icon(Icons.person),
-                  onTap: () => Navigator.of(ctx).pop({'type': 'performer', 'id': id}),
-                );
-              }),
-            ],
-            if (_venues.isNotEmpty) ...[
-              ListTile(title: Text(l10n.createForVenue)),
-              ..._venues.map((v) {
-                final id = v['id']?.toString() ?? '';
-                final name = (v['name'] ?? id).toString();
-                return ListTile(
-                  title: Text(name),
-                  leading: const Icon(Icons.location_on),
-                  onTap: () => Navigator.of(ctx).pop({'type': 'venue', 'id': id, 'name': name}),
-                );
-              }),
-            ],
-          ],
+    return [
+      // Combined view: an explicit id scope, so it tracks exactly the user's
+      // assignments and never widens to unrelated bookings.
+      EventsListPage(
+        key: const ValueKey('events-combined'),
+        embedded: true,
+        initialMonth: widget.initialMonth,
+        // Covers every assignment at once, so a new event here has no single
+        // owner to seed and the page asks which one it is for.
+        combinedMode: true,
+        myPerformerIds: performerIds.isNotEmpty ? performerIds : null,
+        myVenueIds: venueIds.isNotEmpty ? venueIds : null,
+      ),
+      for (final p in _performers)
+        EventsListPage(
+          key: ValueKey('events-performer-${p.id}'),
+          embedded: true,
+          initialMonth: widget.initialMonth,
+          myPerformerIds: p.id != null ? [p.id!] : null,
+          performerName: p.displayName,
         ),
-      );
-    });
-
-    if (choice == null) return;
-    if (choice['type'] == 'performer' && choice['id'] != null) {
-      final res = await context.push<bool?>(eventsNewPath(performerId: choice['id']!));
-      if (res == true) setState(() => _version++);
-    } else if (choice['type'] == 'venue' && choice['id'] != null) {
-      final res = await context.push<bool?>(
-        eventsNewPath(venueId: choice['id']!, venueName: choice['name'], lockVenue: true),
-      );
-      if (res == true) setState(() => _version++);
-    }
-  }
-
-  Widget? _buildFab() {
-    final l10n = AppLocalizations.of(context);
-    final index = _tabController.index;
-    if (index == 0) {
-      return FloatingActionButton(
-        heroTag: const ValueKey('user_calendar_fab_combined'),
-        onPressed: _chooseAccountAndCreate,
-        tooltip: l10n.newEvent,
-        child: const Icon(Icons.add),
-      );
-    }
-
-    if (index <= _performers.length) {
-      final perfIdx = index - 1;
-      final p = _performers[perfIdx];
-      final id = p['id']?.toString() ?? '';
-      return FloatingActionButton(
-        heroTag: ValueKey('user_calendar_fab_perf_$id'),
-        onPressed: () async {
-          final res = await context.push<bool?>(eventsNewPath(performerId: id));
-          if (res == true) setState(() => _version++);
-        },
-        tooltip: l10n.newEventForPerformer,
-        child: const Icon(Icons.add),
-      );
-    }
-
-    final venueIdx = index - 1 - _performers.length;
-    final v = _venues[venueIdx];
-    final id = v['id']?.toString() ?? '';
-    final name = v['name']?.toString();
-    return FloatingActionButton(
-      heroTag: ValueKey('user_calendar_fab_venue_$id'),
-      onPressed: () async {
-        final res = await context.push<bool?>(
-          eventsNewPath(venueId: id, venueName: name, lockVenue: true),
-        );
-        if (res == true) setState(() => _version++);
-      },
-      tooltip: l10n.newEventForVenue,
-      child: const Icon(Icons.add),
-    );
+      for (final v in _venues)
+        EventsListPage(
+          key: ValueKey('events-venue-${v.id}'),
+          embedded: true,
+          initialMonth: widget.initialMonth,
+          venueMode: true,
+          venueId: v.id,
+          venueName: v.displayName,
+        ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final controller = _tabController;
+    if (controller == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     return Scaffold(
+      // The only bar on this screen. Every tab is an embedded EventsListPage, so
+      // there is one back arrow and it sits where every other screen's does.
       appBar: AppBar(
+        leading: backToHomeButton(context),
         title: Text(l10n.calendar),
         actions: [
+          // One refresh for the calendar rather than one per tab: the pages are
+          // embedded now, so their own refresh buttons went with their bars. This
+          // refetches every month on screen, which is what "refresh the calendar"
+          // means however many tabs are loaded.
           IconButton(
-            icon: const Icon(Icons.location_on),
-            tooltip: l10n.browseVenues,
-            onPressed: () => context.push('/venues'),
+            icon: const Icon(Icons.refresh),
+            tooltip: l10n.retry,
+            onPressed: _refresh,
+          ),
+          ...navActions(
+            context,
+            current: Destinations.calendar,
+            accountAction: true,
           ),
         ],
         bottom: TabBar(
-          controller: _tabController,
+          controller: controller,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          tabs: _buildTabs(),
+          tabs: _buildTabs(context),
         ),
       ),
-      body: TabBarView(controller: _tabController, children: _buildViews()),
-      floatingActionButton: _buildFab(),
+      body: TabBarView(controller: controller, children: _buildViews()),
+      // No FAB here: every tab is an EventsListPage, and that page owns the
+      // create button — including which assignment a new event is seeded with.
     );
   }
 }
