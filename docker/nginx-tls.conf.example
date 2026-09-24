@@ -1,0 +1,110 @@
+# Example nginx configuration that terminates TLS. Copy it into place, edit the
+# certificate paths and the server_name, then mount it as shown below.
+#
+#   cp docker/nginx-tls.conf.example docker/nginx-tls.conf
+#   # edit server_name + certificate paths, put fullchain.pem/privkey.pem in ./certs
+#
+# Enable it by OVERRIDING the plain HTTP config that the image ships. Add this
+# to the `app` service in docker-compose.yml:
+#
+#   services:
+#     app:
+#       ports:
+#         - "80:80"     # kept: this config redirects it to https
+#         - "443:443"   # new
+#       volumes:
+#         # Replaces the image's /etc/nginx/conf.d/default.conf (docker/nginx.conf),
+#         # which is what keeps two servers from fighting over port 80.
+#         - ./docker/nginx-tls.conf:/etc/nginx/conf.d/default.conf:ro
+#         - ./certs:/etc/nginx/certs:ro
+#
+# ...or as an override file, so docker-compose.yml stays untouched:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.tls.yml up -d
+#
+# Certificates: mount the directory, never bake it into the image. Anything the
+# public sees must also be reachable at http://pocketbase:8090 internally --
+# that hop stays plain HTTP on the compose network and never leaves the host.
+# Alternative to terminating TLS here: terminate it upstream (cloud LB, Caddy,
+# Traefik) and keep docker/nginx.conf as-is; only the public entry point has to
+# speak TLS.
+
+# Port 80 exists only to send browsers to the TLS vhost. `return 301` is used
+# instead of `rewrite ... permanent` so the scheme is unambiguous.
+server {
+    listen 80;
+    server_name agenda.example.com;
+
+    # ACME/Let's Encrypt HTTP-01 challenges, if certbot runs in another
+    # container. Harmless without it.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    # The app has no HTTP/2-specific behaviour, but enabling it is free.
+    http2 on;
+    server_name agenda.example.com;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    # TLS 1.2 floor: browsers that cannot do better are ancient, and the
+    # PocketBase dashboard sends credentials over this connection.
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:TLS:10m;
+    ssl_session_timeout 1d;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # HSTS. Only add `preload` once you are certain every subdomain will stay
+    # HTTPS-only -- it is effectively permanent in shipped browsers. Kept off
+    # includeSubDomains too, since the example host is a single name.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+
+    # Same as docker/nginx.conf: bundle + /api reverse proxy, same-origin.
+    location /api/ {
+        proxy_pass http://pocketbase:8090/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # PocketBase builds absolute URLs (password reset, file links) from
+        # this, so it must say https behind a TLS terminator.
+        proxy_set_header X-Forwarded-Proto https;
+
+        # Realtime is long-lived SSE: no buffering, no short read timeout.
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        gzip off;
+    }
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        # Repeated: add_header does not merge into a location that sets its own.
+        add_header Strict-Transport-Security "max-age=31536000" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

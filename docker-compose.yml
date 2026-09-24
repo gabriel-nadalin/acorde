@@ -1,6 +1,18 @@
 services:
   # PocketBase backend. It embeds its own SQLite database under pb_data/,
   # which is where all application data lives.
+  #
+  # The port is published on 127.0.0.1 on purpose: this service is NOT the
+  # public entry point. The `app` container runs nginx, which serves the web
+  # bundle and reverse-proxies /api/ to this service (docker/nginx.conf), so
+  # the browser only ever talks to one origin.
+  #
+  # That single-origin proxy is also what removes the old cross-origin trap:
+  # with the app talking to `http://<host>:8090` directly, PB_URL had to be a
+  # browser-reachable absolute URL and PocketBase had to accept that origin.
+  # Through nginx, PB_URL is empty (same origin) and neither applies. The
+  # loopback publish stays so local tooling (curl, the integration tests, the
+  # PocketBase admin UI on the host) can still reach the backend directly.
   pocketbase:
     image: ghcr.io/muchobien/pocketbase:0.38.2
     restart: unless-stopped
@@ -9,9 +21,45 @@ services:
       PB_PORT: 8090
       # Superuser is auto-created/updated on startup. Override via .env.
       PB_ADMIN_EMAIL: ${PB_ADMIN_EMAIL:-admin@example.com}
-      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:-admin123456}
+      # Deliberately no fallback value: `:?` makes compose refuse to start --
+      # and `docker compose config` fail -- when the password is missing. A
+      # literal default here would silently ship the template password from
+      # .env.example in any deployment that forgot to set it. CI asserts this
+      # behaviour, see .github/workflows/ci.yml.
+      PB_ADMIN_PASSWORD: ${PB_ADMIN_PASSWORD:?set PB_ADMIN_PASSWORD in .env}
+      # Public URL the app is served at, used to build the password-reset link in
+      # the email PocketBase sends. No fallback on purpose: unset means "leave
+      # PocketBase's stored appURL alone" (see pb_hooks/mail.pb.js), which is the
+      # right answer for a deployment whose users reach it on a host the container
+      # cannot guess. PocketBase's own default is http://localhost:8090, which is
+      # the BACKEND port and not openable by a recipient's browser.
+      PB_APP_URL: ${PB_APP_URL:-}
+      # Guest sign-in (see pb_hooks/guest.pb.js). Defaults to ON because this is
+      # a prototype: the demo button has to be there when somebody runs the stack
+      # untouched, or it is off in every demo. It is an OFF switch -- set
+      # PB_GUEST_LOGIN=0 to remove the button, which a deployment with real users
+      # should do. Passed explicitly (with a default) so the container always has
+      # a value and the hook's own default is not the only thing holding it open.
+      PB_GUEST_LOGIN: ${PB_GUEST_LOGIN:-1}
+      # Outbound mail. All optional: unset means PocketBase keeps whatever is
+      # stored in its settings, so the dashboard stays a valid way to configure
+      # mail by hand. A host with no password is ignored rather than half-applied
+      # (see pb_hooks/mail.pb.js) -- a mailer that is enabled and failing would be
+      # reported as working by GET /api/agenda/mail-status.
+      #
+      # With these set, the app sends two messages by itself: an invitation to the
+      # invited address, and a "somebody asked to join" notice to the managers of
+      # the entity. Without them, membership is in-app only.
+      PB_SMTP_HOST: ${PB_SMTP_HOST:-}
+      PB_SMTP_PORT: ${PB_SMTP_PORT:-587}
+      PB_SMTP_USERNAME: ${PB_SMTP_USERNAME:-}
+      PB_SMTP_PASSWORD: ${PB_SMTP_PASSWORD:-}
+      PB_SMTP_FROM: ${PB_SMTP_FROM:-}
+      PB_SMTP_SENDER_NAME: ${PB_SMTP_SENDER_NAME:-}
+      # 0 = STARTTLS (port 587, the common case) | 1 = implicit TLS (port 465).
+      PB_SMTP_TLS: ${PB_SMTP_TLS:-0}
     ports:
-      - "8090:8090"
+      - "127.0.0.1:8090:8090"
     volumes:
       - ./pb_data:/pb_data
       - ./pb_hooks:/pb_hooks
@@ -33,15 +81,25 @@ services:
       retries: 3
       start_period: 10s
 
-  # Flutter web app, compiled and served as static files by nginx.
+  # Flutter web app, compiled and served as static files by nginx, which also
+  # proxies /api/ to the pocketbase service above. This container is the only
+  # public entry point.
+  #
+  # To terminate TLS here, replace this container's nginx config with
+  # docker/nginx-tls.conf.example and mount the certificate directory; the
+  # example file documents the exact compose override, and DEVELOPMENT.md has a
+  # "TLS" section. Terminating TLS upstream instead works too -- only this
+  # entry point has to speak TLS.
   app:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        # Baked into the web bundle at build time. Must be reachable from the
-        # browser. Override via .env for non-local deployments.
-        PB_URL: ${PB_URL:-http://127.0.0.1:8090}
+        # Baked into the web bundle at build time. Leave it empty for the
+        # default same-origin deployment (nginx proxies /api/); set it to an
+        # absolute PocketBase URL only when this bundle is served without the
+        # bundled nginx proxy, e.g. from a CDN in front of a separate API host.
+        PB_URL: ${PB_URL:-}
     restart: unless-stopped
     ports:
       - "8080:80"

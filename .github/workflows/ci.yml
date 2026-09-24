@@ -4,6 +4,18 @@ on:
   push:
   pull_request:
 
+# The pinned toolchain lives here, in one place for everything CI installs. The
+# Dockerfile and DEVELOPMENT.md document the same version; the `flutter` job greps
+# both and fails when they drift, so "works locally, breaks in CI" cannot start
+# with a version mismatch.
+env:
+  FLUTTER_VERSION: "3.44.0"
+  POCKETBASE_VERSION: "0.38.2"
+  # sha256 of pocketbase_0.38.2_linux_amd64.zip from the official release page.
+  # Checked after download so a moved tag or a tampered asset fails the job
+  # instead of silently testing a different build.
+  POCKETBASE_ZIP_SHA256: "3749cf7e85b00027f3fb92494037e154aa023276246a101cd0592260b94ad1c3"
+
 jobs:
   flutter:
     runs-on: ubuntu-latest
@@ -12,17 +24,125 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.44.0
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # Drift guard: the image the deployment is built from, the version CI
+      # installs, and the version DEVELOPMENT.md tells contributors to use must be
+      # the same string. A mismatch fails here, before it can produce a
+      # "compiles for me" bug report.
+      - name: Check the pinned toolchain is consistent
+        run: |
+          set -euo pipefail
+          flutter --version
+          dockerfile=$(grep -oE 'cirruslabs/flutter:[0-9]+\.[0-9]+\.[0-9]+' Dockerfile | head -1 | cut -d: -f2)
+          readme=$(grep -m1 -E '^\| *Flutter *\|' DEVELOPMENT.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "workflow=${FLUTTER_VERSION} dockerfile=${dockerfile} readme=${readme}"
+          test "${dockerfile}" = "${FLUTTER_VERSION}"
+          test "${readme}" = "${FLUTTER_VERSION}"
+
+      - run: flutter pub get
+
+      # A gate, not advice. The tall style that arrived in Dart 3.7 was swept
+      # across the whole tree in one commit, so this now only fails on a change
+      # that is itself unformatted.
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test scripts
+
+      # Infos are fatal (the default): the tree carries none, so a new one is a
+      # decision to make rather than background noise. `--no-fatal-infos` used to
+      # sit here and hid the two lints that were tolerated, 20 `avoid_print` and
+      # 11 unbraced single-statement bodies in the dev scripts.
+      - run: flutter analyze
+
+      - run: flutter test
+
+      # The shipped artifact is the compiled web bundle; make sure it builds.
+      # No --dart-define here on purpose: the default (empty PB_URL,
+      # same-origin through nginx) is the deployment this repo ships.
+      - run: flutter build web --release
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same pinned toolchain as the `flutter` job: the integration scripts are
+      # Dart-only but still resolve deps from this Flutter package.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
       - run: flutter pub get
 
-      # Infos are non-fatal: the repo still carries analyzer infos in the dev
-      # scripts. Errors and warnings fail the job.
-      - run: flutter analyze --no-fatal-infos
+      # The PocketBase binary is gitignored, so CI has to provision the exact
+      # version the app is deployed against.
+      - name: Provision the pinned PocketBase binary
+        run: |
+          set -euo pipefail
+          url="https://github.com/pocketbase/pocketbase/releases/download/v${POCKETBASE_VERSION}/pocketbase_${POCKETBASE_VERSION}_linux_amd64.zip"
+          curl -sSfL -o pocketbase.zip "${url}"
+          echo "${POCKETBASE_ZIP_SHA256}  pocketbase.zip" | sha256sum -c -
+          unzip -o -q pocketbase.zip pocketbase
+          chmod +x pocketbase
+          ./pocketbase --version
 
-      - run: flutter test
+      # Boots the shipped binary with a throwaway data dir against the repo's
+      # migrations and hooks. This is the step that fails first (and
+      # legibly) when the migration snapshot or a hook file is broken; the
+      # integration scripts below re-boot their own instance on a random port
+      # with the same migrations/hooks, so nothing here leaks into them.
+      - name: Boot PocketBase against pb_migrations/ + pb_hooks/
+        run: |
+          set -euo pipefail
+          data_dir="$(mktemp -d)"
+          ./pocketbase migrate up --dir "${data_dir}" --migrationsDir ./pb_migrations
+          # Log to a file, not the step's stdout: a background process holding
+          # the step's pipe open can make the runner wait for output that never
+          # arrives.
+          ./pocketbase serve --http 127.0.0.1:8090 --dir "${data_dir}" \
+            --hooksDir ./pb_hooks --migrationsDir ./pb_migrations \
+            > /tmp/pocketbase.log 2>&1 &
+          pb_pid=$!
+          trap 'kill "${pb_pid}" 2>/dev/null || true' EXIT
+          # Readiness, not process creation: the endpoint only answers once the
+          # migrations applied and the JS hooks loaded.
+          curl -sSf --retry 20 --retry-delay 1 --retry-connrefused \
+            http://127.0.0.1:8090/api/health
+          cat /tmp/pocketbase.log
 
-      # The shipped artifact is the compiled web bundle; make sure it builds.
-      - run: flutter build web --release
+      # Both scripts are self-contained: they spawn ./pocketbase on a temp data
+      # dir, apply pb_migrations/, serve with pb_hooks/, drive the API over
+      # HTTP, and tear everything down. No service container, no env vars.
+      - name: Backend guard + schema integration tests
+        run: |
+          set -euo pipefail
+          dart run scripts/guard_test.dart
+          dart run scripts/verify_schema.dart
+          # Realtime speaks a real streaming protocol over a real socket. The
+          # unit suite stubs it with MockClient, which by construction cannot
+          # disagree with the client's own assumption about the handshake —
+          # that is how a broken handshake shipped green once already.
+          dart run scripts/realtime_test.dart
+
+      # Deployment files are code: a compose file that does not interpolate is
+      # a broken deploy, so validate it here. PB_ADMIN_PASSWORD is required
+      # (see docker-compose.yml), hence the throwaway value.
+      - name: Validate docker-compose.yml
+        run: PB_ADMIN_PASSWORD=ci docker compose config --quiet
+
+      # ...and the requirement itself is asserted, so nobody can "fix" a
+      # confusing compose error by putting the template password back as a
+      # default.
+      - name: The stack must refuse to start without PB_ADMIN_PASSWORD
+        run: |
+          set +e
+          output=$(docker compose config 2>&1)
+          status=$?
+          set -e
+          echo "${output}"
+          test "${status}" -ne 0
+          echo "${output}" | grep -q "PB_ADMIN_PASSWORD"

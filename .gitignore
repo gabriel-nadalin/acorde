@@ -23,6 +23,12 @@ migrate_working_dir/
 # is commented out by default.
 #.vscode/
 
+# Generated localization output: `flutter gen-l10n` writes these next to the
+# ARB files (lib/l10n is the output-dir in l10n.yaml). They are build products,
+# regenerated on every build/test -- committing them only creates merge noise
+# and stale-key confusion next to the frozen ARBs.
+lib/l10n/app_localizations*.dart
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
@@ -48,6 +54,13 @@ app.*.map.json
 # _superusers credentials) and uploaded files.
 /pb_data/
 /pb_public/
+
+# Throwaway data/hooks dirs. scripts/guard_test.dart and scripts/verify_schema.dart
+# run the backend against a fresh directory under the OS temp dir, so these
+# belong to local one-off runs that pointed PB_TEST_DATA_DIR at the repo. They
+# must never be committed: they hold a SQLite DB and superuser credentials.
+*.pb_data_tmp/
+*.pb_hooks_tmp/
 
 # PocketBase binaries and local auth cookies
 /pocketbase
