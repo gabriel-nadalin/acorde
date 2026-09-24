@@ -1,0 +1,156 @@
+[
+ {
+  "id": "pbc_memberships",
+  "name": "memberships",
+  "type": "base",
+  "listRule": "@request.auth.id != \"\" && (userId = @request.auth.id || (pendingEmail != \"\" && pendingEmail = @request.auth.email))",
+  "viewRule": "@request.auth.id != \"\" && (userId = @request.auth.id || (pendingEmail != \"\" && pendingEmail = @request.auth.email))",
+  "createRule": "@request.auth.id != \"\"",
+  "updateRule": "@request.auth.id != \"\"",
+  "deleteRule": "@request.auth.id != \"\"",
+  "fields": [
+   {
+    "id": "text_id_memberships_0001",
+    "name": "id",
+    "type": "text",
+    "required": true,
+    "min": 15,
+    "max": 15,
+    "primaryKey": true,
+    "system": true,
+    "autogeneratePattern": "[a-z0-9]{15}",
+    "pattern": "^[a-z0-9]+$",
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "text_userId_memberships_0001",
+    "name": "userId",
+    "type": "text",
+    "required": false,
+    "min": 0,
+    "max": 0,
+    "primaryKey": false,
+    "system": false,
+    "autogeneratePattern": "",
+    "pattern": "",
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "text_pendingEmail_memberships_0001",
+    "name": "pendingEmail",
+    "type": "text",
+    "required": false,
+    "min": 0,
+    "max": 0,
+    "primaryKey": false,
+    "system": false,
+    "autogeneratePattern": "",
+    "pattern": "",
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "text_targetId_memberships_0001",
+    "name": "targetId",
+    "type": "text",
+    "required": false,
+    "min": 0,
+    "max": 0,
+    "primaryKey": false,
+    "system": false,
+    "autogeneratePattern": "",
+    "pattern": "",
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "select_targetType_memberships_0001",
+    "name": "targetType",
+    "type": "select",
+    "required": false,
+    "maxSelect": 1,
+    "values": [
+     "venue",
+     "performer"
+    ],
+    "system": false,
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "text_role_memberships_0001",
+    "name": "role",
+    "type": "text",
+    "required": false,
+    "min": 0,
+    "max": 0,
+    "primaryKey": false,
+    "system": false,
+    "autogeneratePattern": "",
+    "pattern": "",
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "select_status_memberships_0001",
+    "name": "status",
+    "type": "select",
+    "required": false,
+    "maxSelect": 1,
+    "values": [
+     "pending",
+     "active"
+    ],
+    "system": false,
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "select_initiatedBy_memberships_0001",
+    "name": "initiatedBy",
+    "type": "select",
+    "required": false,
+    "maxSelect": 1,
+    "values": [
+     "invite",
+     "request"
+    ],
+    "system": false,
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   },
+   {
+    "id": "text_invitedBy_memberships_0001",
+    "name": "invitedBy",
+    "type": "text",
+    "required": false,
+    "min": 0,
+    "max": 0,
+    "primaryKey": false,
+    "system": false,
+    "autogeneratePattern": "",
+    "pattern": "",
+    "hidden": false,
+    "presentable": false,
+    "help": ""
+   }
+  ],
+  "indexes": [
+   "CREATE INDEX `idx_memberships_userId` ON `memberships` (userId)",
+   "CREATE INDEX `idx_memberships_targetId` ON `memberships` (targetId)",
+   "CREATE INDEX `idx_memberships_pendingEmail` ON `memberships` (pendingEmail)",
+   "CREATE INDEX `idx_memberships_status` ON `memberships` (status)"
+  ],
+  "system": false
+ }
+]
