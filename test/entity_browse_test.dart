@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:event_calendar/models/membership.dart';
-import 'package:event_calendar/screens/entity_browse.dart';
+import 'package:acorde/models/membership.dart';
+import 'package:acorde/screens/entity_browse.dart';
 
 import 'support/screen_harness.dart';
 
@@ -48,6 +48,22 @@ void main() {
   Future<void> seedBrowse() async {
     h.seedEntities();
     await h.warm();
+  }
+
+  /// Demotes this account's row on the entity it manages to a plain `member`.
+  ///
+  /// The two roles differ in exactly one way that matters here: the server lets
+  /// a member book events (`events.guard.pb.js` accepts any active membership)
+  /// but refuses a rename, a delete or a roster change unless the row is an
+  /// active **manager** (`entities.guard.pb.js`). The row actions have to split
+  /// the same way, or the screen offers a control whose only outcome is a 403.
+  Future<void> demoteToMember(_Kind kind) async {
+    for (final record in h.pb.records('memberships')) {
+      if (record['targetId'] == kind.mineId) {
+        record['role'] = 'member';
+      }
+    }
+    await h.warm(force: true);
   }
 
   /// Adds a join request of this user's own that no manager has answered yet,
@@ -130,6 +146,34 @@ void main() {
         // rows in one state each — not a screen that shows the same action twice.
         expect(
           _inRowOf(kind.otherName, find.byTooltip(kind.manageTooltip)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('a membership lets this account book, but not manage', (
+        tester,
+      ) async {
+        await seedBrowse();
+        await demoteToMember(kind);
+
+        await h.pump(tester, kind.page);
+
+        // Booking stays: any active membership may write events for the entity.
+        expect(
+          _inRowOf(kind.mineName, find.byTooltip(kind.eventTooltip)),
+          findsOneWidget,
+        );
+        // Managing goes: the server refuses it for a plain member, so the row
+        // must not offer it. This is the regression guard for a `member` being
+        // handed an edit button that could only ever return 403.
+        expect(
+          _inRowOf(kind.mineName, find.byTooltip(kind.manageTooltip)),
+          findsNothing,
+        );
+        // And it must not fall through to "ask to join" either — they already
+        // have access, so offering to request it would be nonsense.
+        expect(
+          _inRowOf(kind.mineName, find.byTooltip(strings.requestAccess)),
           findsNothing,
         );
       });

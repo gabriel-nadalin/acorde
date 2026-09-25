@@ -10,6 +10,7 @@ import '../theme/colors.dart';
 import '../router_paths.dart';
 import '../utils/calendar_math.dart';
 import '../utils/event_delete.dart';
+import '../utils/event_scope.dart';
 import '../utils/event_labels.dart';
 import '../widgets/async_view.dart';
 
@@ -89,7 +90,37 @@ class _UpcomingPageState extends State<UpcomingPage> {
     context.watch<PerformerRepository>();
     context.watch<AssignmentsController>();
 
-    final events = repo.upcomingEvents;
+    // Scope first, cap second. The repository returns every event the server
+    // reports as still to come and cannot know which of them are this account's
+    // (see [EventRepository.upcoming]); this list is framed as "my schedule", so
+    // it shows exactly the events that touch an assignment — the same set the
+    // calendar's Combinado tab shows, through the same predicate, which is what
+    // makes tapping a day through to it coherent instead of a jump to a screen
+    // where some of these rows do not exist.
+    //
+    // Capping here rather than in the repository is deliberate: a cap applied
+    // before the scope would let other people's bookings fill the list and push
+    // this account's off the end.
+    final assignments = context.watch<AssignmentsController>();
+    final performerIds = assignments.myPerformerIds;
+    final venueIds = assignments.myVenueIds;
+    final loaded = repo.upcomingEvents;
+    final scoped = loaded == null
+        ? null
+        : [
+            for (final event in loaded)
+              if (eventInScope(
+                event,
+                performerIds: performerIds,
+                venueIds: venueIds,
+              ))
+                event,
+          ];
+    final events =
+        scoped == null || scoped.length <= EventRepository.upcomingLimit
+        ? scoped
+        : scoped.sublist(0, EventRepository.upcomingLimit);
+
     final snapshot = events != null
         ? AsyncSnapshot<List<Event>>.withData(ConnectionState.done, events)
         : const AsyncSnapshot<List<Event>>.waiting();
@@ -128,7 +159,57 @@ class _UpcomingPageState extends State<UpcomingPage> {
               onRetry: _refresh,
               builder: (context, items) {
                 if (items.isEmpty) {
-                  return Center(child: Text(l10n.noUpcoming));
+                  // Two different nothings, and they need different answers. An
+                  // account with no assignments has an empty list because
+                  // nothing is *its* yet, and the way forward is the browse
+                  // lists; an account with assignments and nothing booked is
+                  // simply free, and pointing it at a list to join would be
+                  // advice it has already taken.
+                  final hasAssignments =
+                      performerIds.isNotEmpty || venueIds.isNotEmpty;
+                  if (hasAssignments) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          l10n.noUpcoming,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  }
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Destinations.venues.icon,
+                            size: 40,
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            l10n.upcomingNothingOfYours,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: () => context.push(venuesBrowsePath()),
+                            icon: Icon(Destinations.venues.icon),
+                            label: Text(l10n.browseVenues),
+                          ),
+                          TextButton.icon(
+                            onPressed: () =>
+                                context.push(performersBrowsePath()),
+                            icon: Icon(Destinations.performers.icon),
+                            label: Text(l10n.browsePerformers),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
                 }
                 final labels = EventLabels.of(context);
                 // One flat list of headers and rows: a month heading, a day
@@ -171,7 +252,12 @@ class _UpcomingPageState extends State<UpcomingPage> {
                       event: e,
                       locale: locale,
                       labels: labels,
-                      color: _colorFor(context, e),
+                      color: _colorFor(
+                        context,
+                        e,
+                        performerIds: performerIds,
+                        venueIds: venueIds,
+                      ),
                       canWrite: _canWrite(e),
                       onOpen: () => _edit(e),
                       onDelete: () => _delete(e),
@@ -194,14 +280,23 @@ class _UpcomingPageState extends State<UpcomingPage> {
   }
 
   /// The same category colours the calendar uses, so a booking is the same
-  /// colour in both places. An upcoming list mixes kinds, so most rows land on
-  /// "other" — which is the honest answer for "neither one of mine".
-  Color _colorFor(BuildContext context, Event e) {
-    final assignments = context.read<AssignmentsController>();
-    final mine = <String>{};
-    if (e.performers.any(assignments.isMyPerformer)) mine.add('performer');
-    final venueId = e.venueId;
-    if (venueId != null && assignments.isMyVenue(venueId)) mine.add('venue');
+  /// colour in both places — resolved by the same predicate, which is what keeps
+  /// them the same colour rather than two functions that currently agree.
+  ///
+  /// Every row here is in scope by definition, so `other` no longer appears: a
+  /// booking that touches neither an assignment nor a managed venue is not in
+  /// this list at all.
+  Color _colorFor(
+    BuildContext context,
+    Event e, {
+    required Set<String> performerIds,
+    required Set<String> venueIds,
+  }) {
+    final mine = eventCategories(
+      e,
+      performerIds: performerIds,
+      venueIds: venueIds,
+    );
     if (mine.length == 2) return AppColors.both(context);
     if (mine.contains('performer')) return AppColors.performer(context);
     if (mine.contains('venue')) return AppColors.venue(context);

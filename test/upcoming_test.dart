@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:event_calendar/models/event.dart';
-import 'package:event_calendar/screens/upcoming.dart';
-import 'package:event_calendar/screens/user_dashboard.dart';
-import 'package:event_calendar/utils/calendar_math.dart';
+import 'package:acorde/models/event.dart';
+import 'package:acorde/screens/upcoming.dart';
+import 'package:acorde/screens/user_dashboard.dart';
+import 'package:acorde/utils/calendar_math.dart';
 
 import 'support/screen_harness.dart';
 
-/// The upcoming list: what is next, across every assignment.
+/// The upcoming list: what is next, for this account.
 ///
 /// Two things are worth pinning here. The first is the question it answers — an
 /// event that has already finished must not appear, and one that is happening
@@ -17,11 +17,15 @@ import 'support/screen_harness.dart';
 /// server filter says `end > now` for exactly that reason, and these tests hold
 /// the client to the same line rather than trusting the server to have done it.
 ///
-/// The second is deletion, which is the only destructive action in the app. The
-/// rule that matters: a booking this account may not change gets no delete
-/// button at all, because the server would refuse the write anyway — and a
+/// The second is deletion, which is the only destructive action in the app: a
 /// repeating booking must be asked about, since deleting a whole series by
 /// accident cannot be undone.
+///
+/// The list is also *scoped* — it shows the events that touch one of this
+/// account's assignments, not every event on the server. That is covered by
+/// `event_scoping_test.dart`, which holds it and the calendar to the same
+/// answer; the fixtures here are in scope so that what they assert is about
+/// time and deletion rather than about scoping.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -86,10 +90,34 @@ void main() {
     });
 
     testWidgets('shows events in date order', (tester) async {
+      // All three are booked for the act this account belongs to, which is what
+      // puts them in scope — an event touching no assignment is not this
+      // account's and is not listed (see the scoping group below).
       h.pb.records('events')
-        ..add(booking('e-late', days: 30, title: 'Far Off'))
-        ..add(booking('e-next', days: 1, title: 'Tomorrow'))
-        ..add(booking('e-mid', days: 7, title: 'Next Week'));
+        ..add(
+          booking(
+            'e-late',
+            days: 30,
+            title: 'Far Off',
+            performers: const ['p1'],
+          ),
+        )
+        ..add(
+          booking(
+            'e-next',
+            days: 1,
+            title: 'Tomorrow',
+            performers: const ['p1'],
+          ),
+        )
+        ..add(
+          booking(
+            'e-mid',
+            days: 7,
+            title: 'Next Week',
+            performers: const ['p1'],
+          ),
+        );
       await pumpUpcoming(tester);
 
       final titles = tester
@@ -104,8 +132,22 @@ void main() {
       tester,
     ) async {
       h.pb.records('events')
-        ..add(booking('e-past', days: -5, title: 'Long Gone'))
-        ..add(booking('e-future', days: 2, title: 'Still To Come'));
+        ..add(
+          booking(
+            'e-past',
+            days: -5,
+            title: 'Long Gone',
+            performers: const ['p1'],
+          ),
+        )
+        ..add(
+          booking(
+            'e-future',
+            days: 2,
+            title: 'Still To Come',
+            performers: const ['p1'],
+          ),
+        );
       await pumpUpcoming(tester);
 
       expect(find.text('Still To Come'), findsOneWidget);
@@ -187,11 +229,17 @@ void main() {
     });
 
     /// The server allows a write for a venue this account manages, an act it
-    /// belongs to, or an event it created. Anything else must not offer the
-    /// button: a delete that comes back 403 is worse than no button at all.
-    testWidgets('is withheld on a booking this account may not change', (
-      tester,
-    ) async {
+    /// The withholding this screen used to do is now structural.
+    ///
+    /// The list is scoped to this account's assignments, and the server's write
+    /// rule is the *same* disjunction — a venue you manage, an act you belong
+    /// to, or an event you created. So a booking that survives the scope filter
+    /// is one the guard would accept a write to, and the "may not change" case
+    /// is no longer reachable from this screen: it is filtered out before it can
+    /// be drawn, which is the assertion below. (The rule is not deleted from the
+    /// row — it mirrors the server, and the two must keep agreeing — but this
+    /// screen can no longer produce a counter-example to it.)
+    testWidgets('is not listed when it touches no assignment', (tester) async {
       h.pb
           .records('events')
           .add(
@@ -206,8 +254,11 @@ void main() {
           );
       await pumpUpcoming(tester);
 
-      expect(find.text('Not Mine'), findsOneWidget);
-      expect(find.byTooltip(strings.deleteEvent), findsNothing);
+      expect(
+        find.text('Not Mine'),
+        findsNothing,
+        reason: 'a booking touching nothing of this account was listed',
+      );
     });
 
     testWidgets('asks first, and backing out deletes nothing', (tester) async {
@@ -355,7 +406,16 @@ void main() {
       h.pb
           .records('events')
           .add(
-            booking('e-x', days: 3, title: 'Orphaned', venueId: 'gone-venue'),
+            booking(
+              'e-x',
+              days: 3,
+              title: 'Orphaned',
+              // In scope through its act, so the row is listed and the dangling
+              // VENUE is what this test is about. A booking with no assignment
+              // at all would be filtered out before naming ever ran.
+              performers: const ['p1'],
+              venueId: 'gone-venue',
+            ),
           );
       await pumpUpcoming(tester);
 
@@ -410,10 +470,6 @@ void main() {
         final before = h.events.upcomingEvents;
         expect(before, isNotEmpty);
 
-        h.pb.intercept = (request) async =>
-            request.method == 'GET' && request.url.path.contains('/events/')
-            ? null
-            : null;
         // A transport failure rather than an HTTP error: that is what "offline"
         // looks like to the client.
         h.pb.intercept = (request) async {
@@ -475,7 +531,7 @@ void main() {
       'start': local.toUtc().toIso8601String(),
       'end': local.add(const Duration(hours: 2)).toUtc().toIso8601String(),
       'venueId': null,
-      'performers': <String>[],
+      'performers': const ['p1'],
       'createdBy': ScreenHarness.userId,
       'created': '2026-01-01T00:00:00.000Z',
     };

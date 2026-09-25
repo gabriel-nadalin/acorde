@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -563,14 +564,24 @@ class EventRepository extends ChangeNotifier {
   Object? _upcomingToken;
   DateTime? _upcomingFrom;
 
-  /// How many upcoming events one query asks for. Well past what a list screen
-  /// shows at once, and small enough to stay one round-trip.
+  /// How many upcoming events a *screen* shows at once.
+  ///
+  /// Applied by the caller, after scoping — see [upcoming]. It is declared here
+  /// because it is a policy about this list rather than about either screen that
+  /// renders it, and two screens picking their own number is how the calendar
+  /// and the upcoming list came to disagree in the first place.
   static const int upcomingLimit = 50;
 
   /// `YYYY-MM` keys currently held in memory, for diagnostics and tests.
   Set<String> get loadedMonths => Set.unmodifiable(_loadedMonths);
 
-  /// The last upcoming events, or null when the view has never loaded them.
+  /// The last upcoming events as the server reported them, or null when the
+  /// view has never loaded them.
+  ///
+  /// **Not scoped to this account, and not capped** — see [upcoming]. A screen
+  /// that frames the list as the user's own must run it through
+  /// `eventInScope` (`lib/utils/event_scope.dart`) and then apply
+  /// [upcomingLimit]. Both screens that render it do.
   ///
   /// The returned list is this repository's own storage: treat it as read-only.
   List<Event>? get upcomingEvents => _upcoming;
@@ -707,11 +718,21 @@ class EventRepository extends ChangeNotifier {
   /// A failure keeps the previous answer and flips [upcomingStale] rather than
   /// throwing, so an offline user sees their schedule with a warning instead of
   /// an error — matching what the calendar already does per month.
-  Future<List<Event>> upcoming({
-    DateTime? from,
-    int limit = upcomingLimit,
-    bool force = false,
-  }) {
+  ///
+  /// # Unscoped, and capped by the caller
+  ///
+  /// This returns every event the server reports as still to come, not just the
+  /// ones this account is assigned to. It cannot do better: "mine" is a question
+  /// about the viewer (`lib/utils/event_scope.dart`), and the repository does
+  /// not know who is asking.
+  ///
+  /// It deliberately does NOT cap the list either, although [upcomingLimit]
+  /// exists for exactly that. The cap has to apply to the *scoped* list, and
+  /// capping here — before the caller has decided what is in scope — would let
+  /// other people's bookings push this account's off the end of the list. With
+  /// more than [upcomingLimit] upcoming events server-side, a booking of yours
+  /// could be silently missing. Screens therefore scope first and cap second.
+  Future<List<Event>> upcoming({DateTime? from, bool force = false}) {
     final running = _upcomingPass;
     if (running != null && (!force || _upcomingForced)) return running;
 
@@ -720,7 +741,7 @@ class EventRepository extends ChangeNotifier {
     final token = Object();
     _upcomingToken = token;
     late final Future<List<Event>> pass;
-    pass = _loadUpcoming(start, limit, token).whenComplete(() {
+    pass = _loadUpcoming(start, token).whenComplete(() {
       // Same guard as the month passes: an overwritten pass must not clear the
       // newer pass's slot.
       if (identical(_upcomingToken, token)) _upcomingPass = null;
@@ -730,20 +751,19 @@ class EventRepository extends ChangeNotifier {
     return pass;
   }
 
-  Future<List<Event>> _loadUpcoming(
-    DateTime from,
-    int limit,
-    Object token,
-  ) async {
+  Future<List<Event>> _loadUpcoming(DateTime from, Object token) async {
     bool current() => identical(_upcomingToken, token);
     try {
       final items = await _service.getUpcoming(from);
       if (!current()) return items;
-      final future = [
+      // The same `end > from` line the server filter draws, re-checked against
+      // the local clock: the response was built on the server's, and a booking
+      // that ended while the request was in flight must not be listed as still
+      // to come.
+      _upcoming = [
         for (final event in items)
           if (event.end.isAfter(from)) event,
       ];
-      _upcoming = future.length > limit ? future.sublist(0, limit) : future;
       _upcomingStale = false;
       notifyListeners();
       return _upcoming!;
@@ -1127,9 +1147,23 @@ class AssignmentsController extends ChangeNotifier {
   List<Membership> _myRequests = const [];
   Set<String> _myPerformerIds = const {};
   Set<String> _myVenueIds = const {};
+  Set<String> _managedPerformerIds = const {};
+  Set<String> _managedVenueIds = const {};
 
   List<Performer> get myPerformers => List.unmodifiable(_myPerformers);
   List<Venue> get myVenues => List.unmodifiable(_myVenues);
+
+  /// The ids of this account's assignments, as sets.
+  ///
+  /// Exposed because "which events are mine" is asked once per event and once
+  /// per calendar cell (see `lib/utils/event_scope.dart`), so the caller needs
+  /// to hoist the lookups out of its loop rather than rebuild them per cell.
+  /// [UnmodifiableSetView] rather than `Set.unmodifiable`: the latter copies,
+  /// and these are read on every grid build. The backing sets are replaced
+  /// wholesale when the assignments are recomputed, never mutated in place.
+  Set<String> get myPerformerIds => UnmodifiableSetView(_myPerformerIds);
+  Set<String> get myVenueIds => UnmodifiableSetView(_myVenueIds);
+
   List<Membership> get myMemberships => List.unmodifiable(_myMemberships);
 
   /// Pending rows whose target this user **actively manages** and whose origin
@@ -1167,6 +1201,17 @@ class AssignmentsController extends ChangeNotifier {
 
   bool isMyPerformer(String id) => _myPerformerIds.contains(id);
   bool isMyVenue(String id) => _myVenueIds.contains(id);
+
+  /// Whether this account may **administer** the entity rather than only belong
+  /// to it — rename it, re-roster it, delete it.
+  ///
+  /// Deliberately not [isMyVenue]/[isMyPerformer]: those answer "is this mine",
+  /// which a plain `member` also answers yes to, and which is the right question
+  /// for a calendar tab or an event write. Handing a member the manage controls
+  /// would offer nothing but a refusal, since `entities.guard.pb.js` requires an
+  /// active manager row for those writes.
+  bool canManagePerformer(String id) => _managedPerformerIds.contains(id);
+  bool canManageVenue(String id) => _managedVenueIds.contains(id);
 
   /// Reloads memberships and both entity caches, then recomputes.
   ///
@@ -1292,6 +1337,27 @@ class AssignmentsController extends ChangeNotifier {
     _myVenueIds = {
       for (final membership in _myMemberships)
         if (membership.targetType == TargetType.venue) membership.targetId,
+    };
+
+    // Administering is narrower than belonging. `entities.guard.pb.js` refuses a
+    // rename, a delete or a roster change unless the caller holds an **active
+    // manager** row, and a plain `member` gets 403 from the roster endpoint. The
+    // manage affordances therefore read from these sets, not from the ones
+    // above: a member booking their own gigs must not be handed a control whose
+    // only outcome is a refusal.
+    _managedPerformerIds = {
+      for (final membership in _myMemberships)
+        if (membership.targetType == TargetType.performer &&
+            membership.isActive &&
+            membership.isManager)
+          membership.targetId,
+    };
+    _managedVenueIds = {
+      for (final membership in _myMemberships)
+        if (membership.targetType == TargetType.venue &&
+            membership.isActive &&
+            membership.isManager)
+          membership.targetId,
     };
 
     _myPerformers = [

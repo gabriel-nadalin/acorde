@@ -198,8 +198,15 @@ class _EntityBrowsePageState extends State<EntityBrowsePage> {
                 itemBuilder: (context, i) {
                   final entity = entities[i];
                   final id = entity.id ?? '';
-                  final managed =
+                  // Two different questions, and conflating them is what put a
+                  // dead pencil in front of a plain member: `assigned` is "I
+                  // belong here", which the events guard accepts for booking,
+                  // while `managed` is "I administer this", which is the only
+                  // thing an edit or a roster change is allowed to require.
+                  final assigned =
                       id.isNotEmpty && _spec.isManaged(assignments, id);
+                  final managed =
+                      id.isNotEmpty && _spec.canManage(assignments, id);
                   return Card(
                     child: ListTile(
                       leading: Icon(_spec.destination.icon),
@@ -230,6 +237,18 @@ class _EntityBrowsePageState extends State<EntityBrowsePage> {
                                       _openEditor(_spec.editPath(id)),
                                 ),
                               ],
+                            )
+                          : assigned
+                          // A member books events here but cannot rename or
+                          // re-roster the entity, so the create action stays and
+                          // the manage one goes. Showing "Solicitar acesso"
+                          // instead would be worse than useless: they already
+                          // have access.
+                          ? IconButton(
+                              icon: const Icon(Icons.add),
+                              tooltip: _spec.eventTooltip(l10n),
+                              onPressed: () =>
+                                  context.push(_spec.newEventPath(entity)),
                             )
                           : (requested.contains(id)
                                 ? Tooltip(
@@ -279,6 +298,7 @@ class _BrowseSpec {
     required this.emptyMessage,
     required this.load,
     required this.isManaged,
+    required this.canManage,
     required this.subtitle,
     required this.editPath,
     required this.calendarPath,
@@ -298,6 +318,11 @@ class _BrowseSpec {
   final String Function(AppLocalizations) emptyMessage;
   final Future<List<NamedEntity>> Function({bool force}) load;
   final bool Function(AssignmentsController, String id) isManaged;
+
+  /// Narrower than [isManaged]: whether the account holds an active **manager**
+  /// row, which is what the server demands before it will let the record be
+  /// renamed, re-rostered or deleted.
+  final bool Function(AssignmentsController, String id) canManage;
   final String Function(NamedEntity) subtitle;
   final String Function(String id) editPath;
   final String Function(String id) calendarPath;
@@ -323,6 +348,7 @@ class _BrowseSpec {
             return repo.items;
           },
           isManaged: (assignments, id) => assignments.isMyVenue(id),
+          canManage: (assignments, id) => assignments.canManageVenue(id),
           subtitle: (entity) => (entity as Venue).address ?? '',
           editPath: venuesEditPath,
           calendarPath: (id) => entityCalendarPath('venue', id),
@@ -349,6 +375,7 @@ class _BrowseSpec {
             return repo.items;
           },
           isManaged: (assignments, id) => assignments.isMyPerformer(id),
+          canManage: (assignments, id) => assignments.canManagePerformer(id),
           subtitle: (entity) {
             final performer = entity as Performer;
             return performer.contact ?? performer.type ?? '';

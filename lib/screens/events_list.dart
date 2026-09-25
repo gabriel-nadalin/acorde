@@ -10,6 +10,7 @@ import '../nav/destinations.dart';
 import '../router_paths.dart';
 import '../theme/colors.dart';
 import '../utils/calendar_math.dart';
+import '../utils/event_scope.dart';
 import '../utils/error_text.dart';
 import '../utils/event_delete.dart';
 import '../utils/event_labels.dart';
@@ -134,10 +135,7 @@ class _EventsListPageState extends State<EventsListPage> {
     final explicit = widget.myPerformerIds;
     if (explicit != null) return explicit.toSet();
     if (_venueFocusId != null || !_followsAssignments) return null;
-    return {
-      for (final p in _assignments.myPerformers)
-        if (p.id != null) p.id!,
-    };
+    return _assignments.myPerformerIds;
   }
 
   /// Venue ids whose bookings this page marks as its own; see
@@ -150,10 +148,7 @@ class _EventsListPageState extends State<EventsListPage> {
     final focus = _venueFocusId;
     if (focus != null) return {focus};
     if (!_followsAssignments) return null;
-    return {
-      for (final v in _assignments.myVenues)
-        if (v.id != null) v.id!,
-    };
+    return _assignments.myVenueIds;
   }
 
   /// The page's one decision about an event: is it booked by a performer this
@@ -162,19 +157,11 @@ class _EventsListPageState extends State<EventsListPage> {
   /// Day markers, event colour and the scoped filter all read this result, so
   /// a cell can never be tinted "both" while its marker says "performer".
   /// It reads the scopes [build] resolved, so the two axes stay in one place.
-  Set<String> _eventCats(Event e) {
-    final cats = <String>{};
-    final performerScope = _performerScope;
-    if (performerScope != null && e.performers.any(performerScope.contains)) {
-      cats.add('performer');
-    }
-    final venueScope = _venueScope;
-    final venueId = e.venueId;
-    if (venueScope != null && venueId != null && venueScope.contains(venueId)) {
-      cats.add('venue');
-    }
-    return cats;
-  }
+  Set<String> _eventCats(Event e) => eventCategories(
+    e,
+    performerIds: _performerScope ?? const {},
+    venueIds: _venueScope ?? const {},
+  );
 
   Color _colorForEvent(BuildContext context, Event e) {
     final cats = _eventCats(e);

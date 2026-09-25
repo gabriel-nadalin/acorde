@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../models/membership.dart';
 import '../nav/destinations.dart';
 import '../router_paths.dart';
+import '../utils/event_scope.dart';
 import '../models/event.dart';
 import '../utils/calendar_math.dart';
 import '../utils/error_text.dart';
@@ -137,7 +138,26 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
             // The one thing the dashboard cannot show from assignments alone:
             // what is actually next. It is a preview, not the full list, so the
             // card stays a fixed height however busy the schedule gets.
-            final upcoming = context.watch<EventRepository>().upcomingEvents;
+            //
+            // Scoped to this account's assignments, through the same predicate
+            // the upcoming screen and the calendar use: the repository's answer
+            // covers every event on the server, and a "what is next for you"
+            // card filled with bookings that touch nothing of yours would be
+            // describing somebody else's week. See `lib/utils/event_scope.dart`.
+            final allUpcoming = context.watch<EventRepository>().upcomingEvents;
+            final performerIds = assignments.myPerformerIds;
+            final venueIds = assignments.myVenueIds;
+            final upcoming = allUpcoming == null
+                ? null
+                : [
+                    for (final event in allUpcoming)
+                      if (eventInScope(
+                        event,
+                        performerIds: performerIds,
+                        venueIds: venueIds,
+                      ))
+                        event,
+                  ];
             final invites = assignments.pendingInvites;
             final requests = assignments.incomingRequests;
             return RefreshIndicator(
@@ -168,13 +188,19 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                         subtitle: Text(venue.address ?? venue.id ?? ''),
                         // Labelled rather than a bare icon: this list is for
                         // managing records, so the action that does that says so.
-                        trailing: TextButton.icon(
-                          onPressed: venue.id == null
-                              ? null
-                              : () => _openEditor(venuesEditPath(venue.id!)),
-                          icon: const Icon(Icons.edit),
-                          label: Text(l10n.manageVenue),
-                        ),
+                        // Shown only to a manager: a plain member reaches this
+                        // row too, and the server refuses their edit, so the
+                        // button would only ever produce a 403.
+                        trailing:
+                            (venue.id == null ||
+                                !assignments.canManageVenue(venue.id!))
+                            ? null
+                            : TextButton.icon(
+                                onPressed: () =>
+                                    _openEditor(venuesEditPath(venue.id!)),
+                                icon: const Icon(Icons.edit),
+                                label: Text(l10n.manageVenue),
+                              ),
                         onTap: venue.id == null
                             ? null
                             : () => context.push('/calendar/venue/${venue.id}'),
@@ -205,15 +231,17 @@ class _UserDashboardPageState extends State<UserDashboardPage> {
                               performer.id ??
                               '',
                         ),
-                        trailing: TextButton.icon(
-                          onPressed: performer.id == null
-                              ? null
-                              : () => _openEditor(
+                        trailing:
+                            (performer.id == null ||
+                                !assignments.canManagePerformer(performer.id!))
+                            ? null
+                            : TextButton.icon(
+                                onPressed: () => _openEditor(
                                   performersEditPath(performer.id!),
                                 ),
-                          icon: const Icon(Icons.edit),
-                          label: Text(l10n.managePerformer),
-                        ),
+                                icon: const Icon(Icons.edit),
+                                label: Text(l10n.managePerformer),
+                              ),
                         onTap: performer.id == null
                             ? null
                             : () => context.push(
