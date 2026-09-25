@@ -88,7 +88,7 @@ O binário do PocketBase não está no repositório. Qualquer build 0.38.2 funci
 ### Entrar
 
 <p align="center">
-  <img src="docs/img/entrar.png" alt="Tela de entrada, com e-mail, senha, entrar como visitante e as listas públicas" width="620">
+  <img src="docs/img/entrar.png" alt="Tela de entrada, com e-mail, senha, entrar como visitante e as listas públicas" width="760">
 </p>
 
 E-mail e senha, ou criar conta. "Esqueceu a senha?" envia um link por e-mail. Isso
