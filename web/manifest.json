@@ -1,11 +1,11 @@
 {
-    "name": "Agenda de Eventos",
-    "short_name": "Agenda de Eventos",
+    "name": "Acorde",
+    "short_name": "Acorde",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#673AB7",
     "theme_color": "#673AB7",
-    "description": "Agenda de eventos para locais e artistas.",
+    "description": "Acorde - agenda de eventos para locais e artistas.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

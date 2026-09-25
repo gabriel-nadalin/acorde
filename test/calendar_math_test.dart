@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'package:event_calendar/models/event.dart';
-import 'package:event_calendar/utils/calendar_math.dart';
+import 'package:acorde/models/event.dart';
+import 'package:acorde/utils/calendar_math.dart';
 
 import 'support/local_time_zone.dart';
 

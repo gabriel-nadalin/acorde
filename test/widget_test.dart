@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:event_calendar/data/repositories.dart';
-import 'package:event_calendar/data/session_store.dart';
-import 'package:event_calendar/main.dart';
-import 'package:event_calendar/router.dart';
-import 'package:event_calendar/services/pocketbase_service.dart';
+import 'package:acorde/data/repositories.dart';
+import 'package:acorde/data/session_store.dart';
+import 'package:acorde/main.dart';
+import 'package:acorde/router.dart';
+import 'package:acorde/services/pocketbase_service.dart';
 
 import 'support/fake_pocketbase.dart';
 import 'support/screen_harness.dart' show strings;

@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:event_calendar/l10n/app_localizations.dart';
-import 'package:event_calendar/nav/destinations.dart';
-import 'package:event_calendar/router.dart';
+import 'package:acorde/l10n/app_localizations.dart';
+import 'package:acorde/nav/destinations.dart';
+import 'package:acorde/router.dart';
 
 import 'support/screen_harness.dart';
 

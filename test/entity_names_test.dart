@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:event_calendar/utils/entity_names.dart';
+import 'package:acorde/utils/entity_names.dart';
 
 /// The duplicate prompt is only as good as this comparison: too strict and it
 /// never fires (the duplicate gets created anyway, which is the bug it exists to

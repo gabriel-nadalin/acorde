@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:event_calendar/screens/entity_edit.dart';
+import 'package:acorde/screens/entity_edit.dart';
 
 import 'support/fake_pocketbase.dart';
 import 'support/screen_harness.dart';
@@ -373,8 +373,14 @@ void main() {
     expect(h.pb.count('POST venues'), 0);
     expect(claimRequests(), isEmpty);
 
+    // Cancelling is part of the same claim: it must leave the record unwritten
+    // and the form in place, not just dismiss the dialog.
     await tester.tap(find.widgetWithText(TextButton, strings.cancel));
     await tester.pumpAndSettle();
+
+    expect(h.pb.count('POST venues'), 0);
+    expect(claimRequests(), isEmpty);
+    expect(find.byType(VenueEditPage), findsOneWidget);
   });
 
   testWidgets('claiming the duplicate adopts it and reports success', (

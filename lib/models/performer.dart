@@ -61,18 +61,4 @@ class Performer implements NamedEntity {
     type: map['type']?.toString(),
     createdBy: map['createdBy']?.toString(),
   );
-
-  Performer copyWith({
-    String? id,
-    String? name,
-    String? contact,
-    String? type,
-    String? createdBy,
-  }) => Performer(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    contact: contact ?? this.contact,
-    type: type ?? this.type,
-    createdBy: createdBy ?? this.createdBy,
-  );
 }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:event_calendar/screens/events_list.dart';
-import 'package:event_calendar/screens/user_calendar_tabs.dart';
+import 'package:acorde/screens/events_list.dart';
+import 'package:acorde/screens/user_calendar_tabs.dart';
 
 import 'support/screen_harness.dart';
 

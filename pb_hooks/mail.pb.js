@@ -90,7 +90,7 @@ onBootstrap((e) => {
           settings.meta.senderAddress = from;
           settings.meta.senderName =
             String($os.getenv("PB_SMTP_SENDER_NAME") || "").trim() ||
-            String(settings.meta.appName || "Event Calendar");
+            String(settings.meta.appName || "Acorde");
         }
         $app.save(settings);
         console.log("mail: smtp enabled via " + smtpHost + ":" + settings.smtp.port);
@@ -212,7 +212,7 @@ onRecordAfterCreateSuccess((e) => {
   /// dashboard — which is where both an invite and a request are answered.
   function appLink() {
     const url = appUrl();
-    return url !== "" ? '<p><a href="' + url + '">Abrir o Event Calendar</a></p>' : "";
+    return url !== "" ? '<p><a href="' + url + '">Abrir o Acorde</a></p>' : "";
   }
 
   try {
@@ -241,7 +241,7 @@ onRecordAfterCreateSuccess((e) => {
 
       send(
         pendingEmail,
-        "Convite para " + label + " — Event Calendar",
+        "Convite para " + label + " — Acorde",
         "<p>" +
           (inviter !== ""
             ? escapeHtml(inviter) + " convidou você"
@@ -292,7 +292,7 @@ onRecordAfterCreateSuccess((e) => {
 
         send(
           email,
-          "Pedido de acesso a " + label + " — Event Calendar",
+          "Pedido de acesso a " + label + " — Acorde",
           "<p><strong>" +
             escapeHtml(requester) +
             "</strong> pediu para participar de <strong>" +

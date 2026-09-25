@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:event_calendar/models/recurrence.dart';
+import 'package:acorde/models/recurrence.dart';
 
 import 'support/local_time_zone.dart';
 

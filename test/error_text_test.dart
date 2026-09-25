@@ -4,10 +4,10 @@ import 'dart:ui' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:event_calendar/l10n/app_localizations.dart';
-import 'package:event_calendar/models/event.dart';
-import 'package:event_calendar/services/pocketbase_service.dart';
-import 'package:event_calendar/utils/error_text.dart';
+import 'package:acorde/l10n/app_localizations.dart';
+import 'package:acorde/models/event.dart';
+import 'package:acorde/services/pocketbase_service.dart';
+import 'package:acorde/utils/error_text.dart';
 
 import 'support/fake_pocketbase.dart';
 

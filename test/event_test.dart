@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:event_calendar/models/event.dart';
-import 'package:event_calendar/models/recurrence.dart';
+import 'package:acorde/models/event.dart';
+import 'package:acorde/models/recurrence.dart';
 
 /// `Event` has two serialization paths on purpose: [Event.toMap] is the wire
 /// payload the double-booking guard reads, [Event.toJson] is the offline cache.
@@ -22,35 +22,10 @@ void main() {
     updated: DateTime.parse('2026-08-16T09:30:00.000Z'),
     seriesId: seriesId,
     recurrence: recurrence,
-    venueName: 'Harbor Hall',
-    performerNames: const ['Alice', 'Bob'],
   );
 
   group('fromMap', () {
-    test('resolves expanded venue and performer names', () {
-      final event = Event.fromMap({
-        'id': 'e1',
-        'title': 'Gig',
-        'start': '2026-09-01 19:00:00.000Z',
-        'end': '2026-09-01 21:00:00.000Z',
-        'venueId': 'v1',
-        'performers': ['p1', 'p2'],
-        'expand': {
-          'venueId': {'id': 'v1', 'name': 'Harbor Hall'},
-          'performers': [
-            {'id': 'p1', 'name': 'Radiohead'},
-            {'id': 'p2', 'name': 'Thom Yorke'},
-          ],
-        },
-      });
-
-      expect(event.venueName, 'Harbor Hall');
-      expect(event.performerNames, ['Radiohead', 'Thom Yorke']);
-      expect(event.venueId, 'v1');
-      expect(event.performers, ['p1', 'p2']);
-    });
-
-    test('leaves the transient names empty when expand is absent', () {
+    test('reads the venue and performer ids a record carries', () {
       final event = Event.fromMap({
         'id': 'e2',
         'title': 'Gig',
@@ -60,8 +35,6 @@ void main() {
         'performers': ['p9'],
       });
 
-      expect(event.venueName, isNull);
-      expect(event.performerNames, isEmpty);
       expect(event.venueId, 'v9');
       expect(event.performers, ['p9']);
     });
@@ -236,17 +209,6 @@ void main() {
       expect(restored.updated, event.updated);
       expect(restored.seriesId, event.seriesId);
       expect(restored.recurrence?.toJson(), event.recurrence?.toJson());
-    });
-
-    test('never persists the transient display names', () {
-      final event = sample();
-      final json = event.toJson();
-
-      expect(json.containsKey('venueName'), isFalse);
-      expect(json.containsKey('performerNames'), isFalse);
-      final restored = Event.fromJson(json);
-      expect(restored.venueName, isNull);
-      expect(restored.performerNames, isEmpty);
     });
   });
 

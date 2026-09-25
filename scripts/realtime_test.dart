@@ -21,8 +21,8 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:event_calendar/models/event.dart';
-import 'package:event_calendar/services/pocketbase_service.dart';
+import 'package:acorde/models/event.dart';
+import 'package:acorde/services/pocketbase_service.dart';
 
 import 'pb_harness.dart';
 

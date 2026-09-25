@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'package:event_calendar/l10n/app_localizations.dart';
-import 'package:event_calendar/utils/calendar_math.dart';
-import 'package:event_calendar/widgets/calendar_grid.dart';
+import 'package:acorde/l10n/app_localizations.dart';
+import 'package:acorde/utils/calendar_math.dart';
+import 'package:acorde/widgets/calendar_grid.dart';
 
 /// Brazilian Portuguese, end to end, as the app's only locale.
 ///

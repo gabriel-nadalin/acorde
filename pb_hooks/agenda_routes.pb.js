@@ -20,8 +20,9 @@
 /// which: a MANAGER naming an address is an `invite`, its subject asking for
 /// access is a `request`. Both are written `status: "pending"` and both grant
 /// nothing until a manager of the target answers — the row is a question, not a
-/// grant. There is no email channel in this system, so "notification" is an
-/// in-app count; nobody is told, they look.
+/// grant. Notification is an in-app count as the baseline — the roster and the
+/// dashboard are where a pending row is answered — and `mail.pb.js` adds address
+/// mail on top of it when a deployment configures SMTP.
 ///
 /// # Why these are not hooks or rules on the `memberships` collection
 ///
@@ -766,9 +767,9 @@ routerAdd(
 ///
 /// `initiatedBy` is not read at all: the question this route answers is "may
 /// this person in?", whoever asked. That makes it the only recovery path for an
-/// invitee who never answers — with no email channel there is no way to remind
-/// them, and the alternative (delete the invitation, then write an active row
-/// through the collection) is the same act in two requests.
+/// invitee who never answers — with no mail configured there is nothing that can
+/// remind them, and the alternative (delete the invitation, then write an active
+/// row through the collection) is the same act in two requests.
 ///
 /// Refusals: 404 for a row that does not exist, 403 for anybody who does not
 /// manage the target, 400 for a row that is not pending. The order matters — the

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:event_calendar/l10n/app_localizations.dart';
-import 'package:event_calendar/models/membership.dart';
-import 'package:event_calendar/nav/destinations.dart';
-import 'package:event_calendar/screens/entity_browse.dart';
-import 'package:event_calendar/screens/user_calendar_tabs.dart';
-import 'package:event_calendar/screens/user_dashboard.dart';
+import 'package:acorde/l10n/app_localizations.dart';
+import 'package:acorde/models/membership.dart';
+import 'package:acorde/nav/destinations.dart';
+import 'package:acorde/screens/entity_browse.dart';
+import 'package:acorde/screens/user_calendar_tabs.dart';
+import 'package:acorde/screens/user_dashboard.dart';
 
 import 'support/screen_harness.dart';
 

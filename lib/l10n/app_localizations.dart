@@ -97,7 +97,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In pt, this message translates to:
-  /// **'Agenda de Eventos'**
+  /// **'Acorde'**
   String get appTitle;
 
   /// No description provided for @signIn.
@@ -123,12 +123,6 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Informe seu e-mail e sua senha.'**
   String get enterEmailAndPassword;
-
-  /// No description provided for @loginFailed.
-  ///
-  /// In pt, this message translates to:
-  /// **'Não foi possível entrar — verifique seu e-mail e sua senha.'**
-  String get loginFailed;
 
   /// No description provided for @invalidCredentials.
   ///
@@ -334,47 +328,17 @@ abstract class AppLocalizations {
   /// **'Não foi possível carregar os dados'**
   String get couldNotLoadData;
 
-  /// No description provided for @couldNotSave.
-  ///
-  /// In pt, this message translates to:
-  /// **'Não foi possível salvar'**
-  String get couldNotSave;
-
-  /// No description provided for @couldNotDelete.
-  ///
-  /// In pt, this message translates to:
-  /// **'Não foi possível excluir'**
-  String get couldNotDelete;
-
   /// No description provided for @cancel.
   ///
   /// In pt, this message translates to:
   /// **'Cancelar'**
   String get cancel;
 
-  /// No description provided for @close.
-  ///
-  /// In pt, this message translates to:
-  /// **'Fechar'**
-  String get close;
-
-  /// No description provided for @edit.
-  ///
-  /// In pt, this message translates to:
-  /// **'Editar'**
-  String get edit;
-
   /// No description provided for @delete.
   ///
   /// In pt, this message translates to:
   /// **'Excluir'**
   String get delete;
-
-  /// No description provided for @add.
-  ///
-  /// In pt, this message translates to:
-  /// **'Adicionar'**
-  String get add;
 
   /// No description provided for @save.
   ///
@@ -465,12 +429,6 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Gerenciar artista'**
   String get managePerformer;
-
-  /// No description provided for @pendingInvite.
-  ///
-  /// In pt, this message translates to:
-  /// **'Convite pendente'**
-  String get pendingInvite;
 
   /// No description provided for @pendingInvites.
   ///
@@ -760,12 +718,6 @@ abstract class AppLocalizations {
   /// **'Os dados em cache estavam ilegíveis e foram descartados'**
   String get localCacheCorrupt;
 
-  /// No description provided for @reconnecting.
-  ///
-  /// In pt, this message translates to:
-  /// **'Reconectando…'**
-  String get reconnecting;
-
   /// No description provided for @noEvents.
   ///
   /// In pt, this message translates to:
@@ -909,12 +861,6 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Convite enviado para {email}'**
   String inviteSent(Object email);
-
-  /// No description provided for @invitePendingHint.
-  ///
-  /// In pt, this message translates to:
-  /// **'A pessoa entra assim que fizer login.'**
-  String get invitePendingHint;
 
   /// No description provided for @emailInvalid.
   ///
@@ -1078,18 +1024,6 @@ abstract class AppLocalizations {
   /// **'Agora você gerencia {name}'**
   String claimSucceeded(Object name);
 
-  /// No description provided for @rosterInvited.
-  ///
-  /// In pt, this message translates to:
-  /// **'Convidado'**
-  String get rosterInvited;
-
-  /// No description provided for @rosterActive.
-  ///
-  /// In pt, this message translates to:
-  /// **'Ativo'**
-  String get rosterActive;
-
   /// No description provided for @rosterApprove.
   ///
   /// In pt, this message translates to:
@@ -1120,12 +1054,6 @@ abstract class AppLocalizations {
   /// **'Membro'**
   String get roleMember;
 
-  /// No description provided for @roleLabel.
-  ///
-  /// In pt, this message translates to:
-  /// **'Função'**
-  String get roleLabel;
-
   /// No description provided for @changeRole.
   ///
   /// In pt, this message translates to:
@@ -1143,12 +1071,6 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Aguardando o aceite'**
   String get awaitingAcceptance;
-
-  /// No description provided for @couldNotLoadRoster.
-  ///
-  /// In pt, this message translates to:
-  /// **'Não foi possível carregar a equipe'**
-  String get couldNotLoadRoster;
 
   /// No description provided for @rosterRequested.
   ///
@@ -1204,18 +1126,6 @@ abstract class AppLocalizations {
   /// **'Recusar'**
   String get rejectRequest;
 
-  /// No description provided for @noAccessToManage.
-  ///
-  /// In pt, this message translates to:
-  /// **'Você ainda não gerencia isto'**
-  String get noAccessToManage;
-
-  /// No description provided for @reviewRequest.
-  ///
-  /// In pt, this message translates to:
-  /// **'Revisar'**
-  String get reviewRequest;
-
   /// No description provided for @decideRequestAction.
   ///
   /// In pt, this message translates to:
@@ -1251,6 +1161,12 @@ abstract class AppLocalizations {
   /// In pt, this message translates to:
   /// **'Não há nada por vir'**
   String get noUpcoming;
+
+  /// No description provided for @upcomingNothingOfYours.
+  ///
+  /// In pt, this message translates to:
+  /// **'Nada seu por enquanto. Encontre o seu local ou artista para começar a acompanhar a agenda.'**
+  String get upcomingNothingOfYours;
 
   /// No description provided for @deleteEvent.
   ///

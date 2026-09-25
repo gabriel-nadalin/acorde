@@ -35,9 +35,12 @@
 /// nobody implemented). So the client asks, this answers, and the button is
 /// rendered from the answer.
 ///
-/// `PB_GUEST_LOGIN=1` (or `true`) enables it. Anything else — unset, empty,
-/// `0`, `false`, a typo — is OFF, because the safe default for a switch that
-/// creates accounts without a verified address is closed. `docker-compose.yml`
+/// Guest sign-in is **ON by default**, and `PB_GUEST_LOGIN` is therefore an OFF
+/// switch: `0`, `false`, `off` or `no` disables it, while unset, empty, `1`,
+/// `true` or a typo all leave it on. That direction is deliberate — this is a
+/// prototype, and a demo button that only appears after somebody edits a file is
+/// absent from every demo — so the default has to suit the demo and the opt-out
+/// has to be the thing a real deployment writes down. `docker-compose.yml`
 /// passes `PB_GUEST_LOGIN` through, and `.env.example` documents it.
 ///
 /// # Why this is not an oracle

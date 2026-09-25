@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:event_calendar/data/repositories.dart';
-import 'package:event_calendar/models/event.dart';
-import 'package:event_calendar/services/pocketbase_service.dart';
+import 'package:acorde/data/repositories.dart';
+import 'package:acorde/models/event.dart';
+import 'package:acorde/services/pocketbase_service.dart';
 
 import 'support/fake_pocketbase.dart';
 

@@ -5,9 +5,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:event_calendar/data/repositories.dart';
-import 'package:event_calendar/data/session_store.dart';
-import 'package:event_calendar/services/pocketbase_service.dart';
+import 'package:acorde/data/repositories.dart';
+import 'package:acorde/data/session_store.dart';
+import 'package:acorde/services/pocketbase_service.dart';
 
 import 'support/fake_pocketbase.dart';
 

@@ -399,6 +399,22 @@ function entitiesGuard(e) {
       // manager's own invite look like the invitee asking to join.
       e.record.set("initiatedBy", "invite");
 
+      // `role` is one of exactly two values, and the stored column is plain
+      // text, so nothing else enforces it. A typo ("Managr") or an invented
+      // value ("admin") would be stored verbatim and then read as *not a
+      // manager* by every consumer — `hasMembership(..., "manager", ...)` and
+      // the client's `isManager` both compare against the exact string, so the
+      // row would silently behave as a plain member. `/api/agenda/join` already
+      // rejects anything else (agenda_routes.pb.js); this is the same rule on
+      // the collection path, and an omitted role becomes `member` rather than an
+      // empty string that means the same thing less legibly.
+      e.record.set(
+        "role",
+        String(e.record.get("role") || "").trim() === "manager"
+          ? "manager"
+          : "member"
+      );
+
       // Who invited them, for the invitation email to name — provenance only, and
       // consulted by no authorization check (see venues/performers `createdBy`).
       // Set from the authenticated caller rather than the body, or a client could

@@ -55,10 +55,10 @@ app.*.map.json
 /pb_data/
 /pb_public/
 
-# Throwaway data/hooks dirs. scripts/guard_test.dart and scripts/verify_schema.dart
-# run the backend against a fresh directory under the OS temp dir, so these
-# belong to local one-off runs that pointed PB_TEST_DATA_DIR at the repo. They
-# must never be committed: they hold a SQLite DB and superuser credentials.
+# Throwaway data/hooks dirs. The backend integration scripts normally run against
+# a fresh directory under the OS temp dir, so these only appear when a one-off run
+# pointed the server at the repo instead. They must never be committed: they hold
+# a SQLite DB and superuser credentials.
 *.pb_data_tmp/
 *.pb_hooks_tmp/
 

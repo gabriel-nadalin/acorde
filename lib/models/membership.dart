@@ -118,34 +118,6 @@ class Membership implements Identified {
     requestedByMe: map['requestedByMe'] == true,
   );
 
-  Membership copyWith({
-    String? id,
-    String? userId,
-    String? pendingEmail,
-    String? targetId,
-    TargetType? targetType,
-    String? role,
-    MembershipStatus? status,
-    String? initiatedBy,
-    String? name,
-    String? email,
-    bool? isSelf,
-    bool? requestedByMe,
-  }) => Membership(
-    id: id ?? this.id,
-    userId: userId ?? this.userId,
-    pendingEmail: pendingEmail ?? this.pendingEmail,
-    targetId: targetId ?? this.targetId,
-    targetType: targetType ?? this.targetType,
-    role: role ?? this.role,
-    status: status ?? this.status,
-    initiatedBy: initiatedBy ?? this.initiatedBy,
-    name: name ?? this.name,
-    email: email ?? this.email,
-    isSelf: isSelf ?? this.isSelf,
-    requestedByMe: requestedByMe ?? this.requestedByMe,
-  );
-
   /// Serialises the row for the offline mirror.
   ///
   /// [isSelf] is deliberately absent: it is a verdict the server gives for one

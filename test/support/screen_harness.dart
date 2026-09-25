@@ -8,10 +8,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:event_calendar/data/repositories.dart';
-import 'package:event_calendar/data/session_store.dart';
-import 'package:event_calendar/l10n/app_localizations.dart';
-import 'package:event_calendar/services/pocketbase_service.dart';
+import 'package:acorde/data/repositories.dart';
+import 'package:acorde/data/session_store.dart';
+import 'package:acorde/l10n/app_localizations.dart';
+import 'package:acorde/services/pocketbase_service.dart';
 
 import 'fake_pocketbase.dart';
 

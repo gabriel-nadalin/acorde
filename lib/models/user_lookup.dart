@@ -23,9 +23,4 @@ class UserLookup {
     exists: map['exists'] == true,
     name: (map['name'] ?? '').toString(),
   );
-
-  factory UserLookup.fromJson(Map<String, dynamic> json) =>
-      UserLookup.fromMap(json);
-
-  Map<String, dynamic> toJson() => {'exists': exists, 'name': name};
 }

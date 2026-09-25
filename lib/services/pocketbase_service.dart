@@ -220,6 +220,10 @@ class PocketBaseService {
 
   /// Closes the http client. Only the client this service created is closed:
   /// an injected one belongs to its creator.
+  ///
+  /// Unused in the app — which builds one long-lived [shared] service — but the
+  /// realtime integration test constructs two to act as two clients and must
+  /// release both.
   void close() {
     if (_ownsClient) _client.close();
   }
@@ -461,14 +465,16 @@ class PocketBaseService {
   /// Fetches every event record matching [filter], following pagination until
   /// the collection is exhausted.
   ///
-  /// Related venue/performer records are expanded inline so callers do not need
-  /// a second lookup per event.
+  /// No `expand`: `venueId` and `performers` are text/json id fields rather than
+  /// relations, so PocketBase cannot expand them, and the display names are
+  /// resolved from the entity repositories at render time instead
+  /// (`lib/utils/event_labels.dart`).
   Future<List<Event>> getEvents({String? filter, int perPage = 200}) async {
     final records = await _fetchAll(
       'events',
       perPage: perPage,
       filter: filter,
-      extra: const {'expand': 'venueId,performers', 'sort': 'start'},
+      extra: const {'sort': 'start'},
     );
     return [
       for (final record in records)
@@ -621,8 +627,8 @@ class PocketBaseService {
   /// roster: a manager cannot read the people they manage through the
   /// collection, which is why [getRoster] exists. Anything other than the
   /// caller's own rows has to come from there.
-  Future<List<Membership>> getMemberships({String? filter}) async {
-    final records = await _fetchAll('memberships', filter: filter);
+  Future<List<Membership>> getMemberships() async {
+    final records = await _fetchAll('memberships');
     return [for (final record in records) Membership.fromMap(record)];
   }
 

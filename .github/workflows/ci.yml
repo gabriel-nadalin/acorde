@@ -29,17 +29,24 @@ jobs:
           cache: true
 
       # Drift guard: the image the deployment is built from, the version CI
-      # installs, and the version DEVELOPMENT.md tells contributors to use must be
-      # the same string. A mismatch fails here, before it can produce a
+      # installs, and the versions the two documents tell contributors to use must
+      # all be the same string. A mismatch fails here, before it can produce a
       # "compiles for me" bug report.
+      #
+      # README.md is checked as well as DEVELOPMENT.md because it names the
+      # version in its own words ("Precisa do Flutter 3.44.0"), which is the copy a
+      # contributor reads first — and the one that can silently go stale, since
+      # nothing else links the two.
       - name: Check the pinned toolchain is consistent
         run: |
           set -euo pipefail
           flutter --version
           dockerfile=$(grep -oE 'cirruslabs/flutter:[0-9]+\.[0-9]+\.[0-9]+' Dockerfile | head -1 | cut -d: -f2)
-          readme=$(grep -m1 -E '^\| *Flutter *\|' DEVELOPMENT.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-          echo "workflow=${FLUTTER_VERSION} dockerfile=${dockerfile} readme=${readme}"
+          devdocs=$(grep -m1 -E '^\| *Flutter *\|' DEVELOPMENT.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          readme=$(grep -m1 -oE 'Flutter [0-9]+\.[0-9]+\.[0-9]+' README.md | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          echo "workflow=${FLUTTER_VERSION} dockerfile=${dockerfile} development=${devdocs} readme=${readme}"
           test "${dockerfile}" = "${FLUTTER_VERSION}"
+          test "${devdocs}" = "${FLUTTER_VERSION}"
           test "${readme}" = "${FLUTTER_VERSION}"
 
       - run: flutter pub get

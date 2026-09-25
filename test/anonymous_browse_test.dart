@@ -3,11 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:event_calendar/l10n/app_localizations.dart';
-import 'package:event_calendar/models/membership.dart';
-import 'package:event_calendar/nav/destinations.dart';
-import 'package:event_calendar/router.dart';
-import 'package:event_calendar/screens/entity_browse.dart';
+import 'package:acorde/l10n/app_localizations.dart';
+import 'package:acorde/models/membership.dart';
+import 'package:acorde/nav/destinations.dart';
+import 'package:acorde/router.dart';
+import 'package:acorde/screens/entity_browse.dart';
 
 import 'support/screen_harness.dart';
 

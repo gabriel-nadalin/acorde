@@ -14,10 +14,12 @@ import 'recurrence.dart';
 ///   * [toJson]/[fromJson] are the offline cache, read and written by this app
 ///     only, so they stay strict and canonical.
 ///
-/// [venueName] and [performerNames] are **transient**: they come from
-/// PocketBase `expand` or from the venue/performer repositories at render time,
-/// and are never persisted. Caching them would freeze display names at the
-/// moment an event was fetched and let them go stale behind a renamed venue.
+/// Display names are deliberately absent from this model. `events.venueId` and
+/// `events.performers` are plain text/json fields holding ids, not PocketBase
+/// relations (see `pb_hooks/events.guard.pb.js`), so `expand` can never resolve
+/// them — and names resolved from a listing would freeze at fetch time and go
+/// stale behind a renamed venue. `lib/utils/event_labels.dart` resolves them
+/// from the repositories at render time instead.
 class Event implements Identified {
   Event({
     this.id,
@@ -32,8 +34,6 @@ class Event implements Identified {
     this.updated,
     this.seriesId,
     this.recurrence,
-    this.venueName,
-    this.performerNames = const [],
   }) : created = created ?? DateTime.now();
 
   @override
@@ -64,12 +64,6 @@ class Event implements Identified {
 
   /// The rule this instance was generated from, if any.
   final Recurrence? recurrence;
-
-  /// Transient display name from `expand`; not persisted.
-  final String? venueName;
-
-  /// Transient display names from `expand`; not persisted.
-  final List<String> performerNames;
 
   Duration get duration => end.difference(start);
 
@@ -137,8 +131,6 @@ class Event implements Identified {
     updated: _optionalDate(data['updated']),
     seriesId: data['seriesId']?.toString(),
     recurrence: _recurrence(data['recurrence']),
-    venueName: _expandedName(data['expand'], 'venueId'),
-    performerNames: _expandedNames(data['expand'], 'performers'),
   );
 
   Event copyWith({
@@ -154,8 +146,6 @@ class Event implements Identified {
     DateTime? updated,
     String? seriesId,
     Recurrence? recurrence,
-    String? venueName,
-    List<String>? performerNames,
   }) => Event(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -169,8 +159,6 @@ class Event implements Identified {
     updated: updated ?? this.updated,
     seriesId: seriesId ?? this.seriesId,
     recurrence: recurrence ?? this.recurrence,
-    venueName: venueName ?? this.venueName,
-    performerNames: performerNames ?? this.performerNames,
   );
 
   /// Rebuilds this event for another occurrence of its series, preserving the
@@ -241,24 +229,5 @@ class Event implements Identified {
     } catch (_) {
       return null;
     }
-  }
-
-  static String? _expandedName(dynamic expand, String key) {
-    if (expand is! Map) return null;
-    final value = expand[key];
-    if (value is! Map) return null;
-    final name = (value['name'] ?? value['title'] ?? '').toString();
-    return name.isEmpty ? null : name;
-  }
-
-  static List<String> _expandedNames(dynamic expand, String key) {
-    if (expand is! Map) return const [];
-    final value = expand[key];
-    if (value is! List) return const [];
-    return [
-      for (final item in value)
-        if (item is Map && (item['name'] ?? item['title']) != null)
-          (item['name'] ?? item['title']).toString(),
-    ];
   }
 }

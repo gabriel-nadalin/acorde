@@ -60,7 +60,7 @@ class EventLabels {
     if (id == venueOverrideId && (venueOverrideName?.isNotEmpty ?? false)) {
       return venueOverrideName!;
     }
-    final resolved = venues.byId(id)?.displayName ?? e.venueName;
+    final resolved = venues.byId(id)?.displayName;
     if (resolved != null && resolved.isNotEmpty) return resolved;
     return l10n.eventVenueMissing;
   }
@@ -68,7 +68,7 @@ class EventLabels {
   /// Performer names, comma-separated; ids that no longer resolve show the
   /// "no longer exists" label instead of the id.
   String performersFor(Event e) {
-    if (e.performers.isEmpty) return e.performerNames.join(', ');
+    if (e.performers.isEmpty) return '';
     return [
       for (var i = 0; i < e.performers.length; i++)
         _performerNameAt(e, i) ?? l10n.eventPerformerMissing,
@@ -82,16 +82,15 @@ class EventLabels {
     return [if (venue.isNotEmpty) venue, if (acts.isNotEmpty) acts].join(' • ');
   }
 
-  /// Name of `e.performers[index]`, preferring the performer cache and falling
-  /// back to the `expand`ed name the wire may carry alongside the ids. Null when
-  /// neither resolves, i.e. the id is dangling.
+  /// Name of `e.performers[index]` from the performer cache. Null when it does
+  /// not resolve, i.e. the id is dangling.
+  ///
+  /// There is no expanded-name fallback to try: `events.performers` is a json
+  /// id field rather than a relation, so the wire never carries names beside the
+  /// ids (see `pb_hooks/events.guard.pb.js`).
   String? _performerNameAt(Event e, int index) {
     final cached = performers.byId(e.performers[index])?.displayName;
     if (cached != null && cached.isNotEmpty) return cached;
-    final expanded = index < e.performerNames.length
-        ? e.performerNames[index]
-        : null;
-    if (expanded != null && expanded.isNotEmpty) return expanded;
     return null;
   }
 }

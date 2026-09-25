@@ -32,7 +32,14 @@ class Venue implements NamedEntity {
   final String? contact;
   final int? capacity;
 
-  /// IANA zone name, e.g. `Europe/Madrid`.
+  /// The venue's own timezone, as free text (e.g. `Europe/Madrid`) — a note on
+  /// the record, not a setting that moves anything.
+  ///
+  /// Deliberately not read when events are shown: times are stored as UTC
+  /// instants and every screen renders them with `toLocal()`, so each viewer
+  /// reads the schedule on their own clock. Making this field authoritative
+  /// would change what dozens of screens display, and would need a real zone
+  /// picker rather than a text box.
   final String? timezone;
 
   /// User id of the creator, set by the server on create. Provenance only:
@@ -79,23 +86,5 @@ class Venue implements NamedEntity {
     capacity: (map['capacity'] as num?)?.toInt(),
     timezone: map['timezone']?.toString(),
     createdBy: map['createdBy']?.toString(),
-  );
-
-  Venue copyWith({
-    String? id,
-    String? name,
-    String? address,
-    String? contact,
-    int? capacity,
-    String? timezone,
-    String? createdBy,
-  }) => Venue(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    address: address ?? this.address,
-    contact: contact ?? this.contact,
-    capacity: capacity ?? this.capacity,
-    timezone: timezone ?? this.timezone,
-    createdBy: createdBy ?? this.createdBy,
   );
 }

@@ -6,8 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-import 'package:event_calendar/l10n/app_localizations.dart';
-import 'package:event_calendar/router.dart';
+import 'package:acorde/l10n/app_localizations.dart';
+import 'package:acorde/router.dart';
 
 import 'support/fake_pocketbase.dart';
 import 'support/screen_harness.dart';

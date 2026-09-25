@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:event_calendar/screens/password_reset.dart';
-import 'package:event_calendar/screens/user_select.dart';
+import 'package:acorde/screens/password_reset.dart';
+import 'package:acorde/screens/user_select.dart';
 
 import 'support/fake_pocketbase.dart';
 
