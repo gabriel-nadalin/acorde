@@ -4,6 +4,18 @@
 
 ### Added
 
+* **Three things the README was missing.** It covered all six screens but not the
+  three questions a user hits *between* them. *Recuperar a senha* documents the
+  reset flow, including why the confirmation is deliberately hedged ("se esse
+  endereço tiver uma conta…") rather than confirming an account exists.
+  *Recorrência* documents that a repeat creates independent events, and therefore
+  why deleting one asks *somente este* vs *a série inteira* — the one
+  irreversible question in the app, previously discoverable only by meeting it.
+  And a bullet records that times are shown in the **viewer's** zone, so
+  `venues.timezone` does not move anything; that field's doc comment called it an
+  "IANA zone name" while nothing parsed it, which the new text and a note in
+  `DEVELOPMENT.md` correct.
+
 * **Guest sign-in, for demonstrating the app without an account.** The sign-in
   screen gains *"Entrar como visitante"*, which creates a throwaway account and
   signs in with it — no address, no password typed. The credentials are generated client-side (`guest-<ts><rand>@guest.invalid`,
@@ -35,6 +47,26 @@
   which is why `Destinations` exists. The screens read different data paths
   (`end > now` unbounded vs. a month window with its own cache), so a second grid
   would have meant a second month-loading path beside the one that already exists.
+
+### Fixed
+
+* **Próximos listed bookings that were not yours, and tapping one led nowhere.**
+  Reported by the user: tapping a day in the upcoming list opened a calendar that
+  "has nothing to do with" the events listed there. It did not — `/upcoming` ran
+  one query with no scope at all (`end > now`), while the calendar's Combinado tab
+  filters to this account's assignments. Measured on the seeded data, three of
+  seventeen rows were somebody else's bookings, shown in the list and absent from
+  the screen the day header opened.
+
+  The screens were not merely inconsistent, they were two implementations of one
+  idea: `events_list.dart` had `_eventCats` and used it to filter, `upcoming.dart`
+  had `_colorFor` and used it only to choose a colour. They now share
+  `lib/utils/event_scope.dart`, and the repository's list is scoped by the screen
+  rather than by the repository, which cannot know who is asking.
+
+  The display cap moved with it: it now applies *after* scoping, because capping
+  first let other people's bookings fill the fifty-row window and push this
+  account's off the end.
 
 ### Fixed
 
@@ -163,6 +195,59 @@
 
 ### Changed
 
+* **A plain member is no longer offered controls the server refuses.** The role
+  split is real at the server — `entities.guard.pb.js` lets any active membership
+  book events, but requires an active **manager** to rename, re-roster or delete
+  an entity, and the roster endpoint answers 403 for anything less — yet the
+  client asked only "is this mine", which is the *booking* question, and used the
+  answer to decide whether to draw an edit button. So a band member was shown both
+  a ＋ and a pencil on their own band, and the dashboard labelled the row
+  *"Gerenciar artista"*: the pencil opened an editor whose save the server
+  rejected, and the dashboard's label pointed at a roster that would 403.
+  `AssignmentsController` now derives `canManagePerformer`/`canManageVenue` from
+  active manager rows, separate from `isMyPerformer`/`isMyVenue`, and the browse
+  rows split three ways instead of two: manage (＋ and pencil), belong (＋ only),
+  or join (ask / pending). Verified against a live server — Thom Yorke is a
+  `member` of Radiohead and a `manager` of Eastside Loft, so `PATCH` returns 403
+  on the one and succeeds on the other — and pinned by a new test per kind that
+  fails with the old single-flag logic.
+* **Membership `role` is constrained on the collection path, not only on `/join`.**
+  The column is plain text, so `"Managr"` or `"admin"` was stored verbatim by a
+  manager's invite and then read as *not a manager* by every consumer, since both
+  `hasMembership(..., "manager", ...)` and the client's `isManager` compare
+  against the exact string — a silent demotion. `POST /api/agenda/join` already
+  rejected anything but `member`/`manager`; the create branch of
+  `entities.guard.pb.js` now normalises the same way, with an omitted role
+  becoming `member`. Not an escalation either way (creating still requires
+  `canAdminister`), but no longer a silent one.
+* **The `expand` request for event names is gone, along with the fields it fed.**
+  Client code asked PocketBase for `expand=venueId,performers`, but the guard
+  documents why that can never resolve: `events.venueId` and `events.performers`
+  are text/json id fields, not relations, so rules and `expand` cannot traverse
+  them. A live query returns no `expand` key at all, which made
+  `Event.venueName`/`performerNames` and their two parsing helpers unreachable,
+  and the fallbacks reading them in `event_labels.dart` dead. Display names come
+  from the entity repositories at render time, which is also what keeps them from
+  going stale behind a rename. 15 unreferenced messages were removed from
+  `app_pt.arb` the same way (`loginFailed`, `reconnecting`, `rosterActive`,
+  `noAccessToManage`, …), along with four unreferenced model members
+  (`Venue`/`Performer`/`Membership.copyWith`, `UserLookup.fromJson`/`toJson`) and
+  an unused `filter` parameter on `getMemberships`. `PocketBaseService.close()`
+  stays: only the app never calls it, the realtime integration test constructs two
+  services and releases both.
+* **Comments that stated the opposite of the code are corrected.** `guest.pb.js`
+  described `PB_GUEST_LOGIN` as opt-in ("anything else — unset, empty, `0`,
+  `false`, a typo — is OFF") while the code it sits above defaults to **on**;
+  `agenda_routes.pb.js` said twice that "there is no email channel in this system"
+  after `mail.pb.js` had shipped one. A reader trusting either would have made a
+  wrong call about the deployment. `DEVELOPMENT.md` also documented a
+  `PB_TEST_DATA_DIR` that no script reads, and `.gitignore`'s comment cited it too;
+  the genuinely undocumented knob is `PB_COOKIE`, which both collection scripts
+  read and which is now written down.
+* **`README.md` is in the toolchain drift guard.** The guard pinned the Flutter
+  version across the workflow, the `Dockerfile` and `DEVELOPMENT.md`, but
+  `README.md` names it too — in the copy a contributor reads first, and with
+  nothing else linking the two. All four are compared now.
 * **Web is the only platform.** The Android, iOS, macOS, Windows and Linux
   scaffolding is deleted — 115 files, five targets, none of them ever built by
   CI or the Dockerfile. `.metadata` follows. `flutter create --platforms=x .`
@@ -181,9 +266,35 @@
   "flutter_application_1" or "Flutter Application 1", the web `<title>`, manifest
   and meta description advertised a new Flutter project, and the bundle ids were
   `com.example.flutter_application_1` — which the Play Store refuses to publish
-  under that namespace. Everything now reads `Event Calendar`, and the bundle ids
-  are `com.eventcalendar.app`; the Kotlin `MainActivity` moved to match the new
-  Android namespace, and the Xcode, Windows and Linux product metadata follow.
+  under that namespace. Everything then read `Event Calendar`, and the bundle ids
+  were `com.eventcalendar.app`; the Kotlin `MainActivity` moved to match the new
+  Android namespace, and the Xcode, Windows and Linux product metadata followed.
+  Those targets were dropped afterwards (see *Web is the only platform*), so no
+  bundle id survives in the tree today, and the name itself was replaced again —
+  see the next entry.
+* **The app is named `Acorde`.** *Agenda de Eventos* was a category, not a name:
+  every scheduling app is an "agenda de eventos", and the phrase collided with the
+  app's own vocabulary, where *Agenda*, *Combinado*, *Próximos* and *Calendário*
+  each already mean something specific. Its PWA `short_name` was also 17
+  characters — long enough for a launcher to ellipsize it on an installed icon.
+  *Acorde* is the idea the app already centres on: a chord only works when its
+  notes are in tune with one another, which is the same claim a room and the act
+  playing it make about a shared slot — including the shared-performer collision
+  (a solo set stepping on a band's booking) that `events.guard.pb.js` exists to
+  catch. The product name now has one source, `appTitle` in `app_pt.arb`, which the
+  generated `AppLocalizations` reads; the web `<title>`, meta description and
+  manifest name/`short_name`/description were updated to agree with it instead of
+  each holding an independent copy. **The Dart package moves with the product**,
+  `event_calendar` → `acorde` — `pubspec.yaml` plus 70 `package:` imports across
+  `test/` and `scripts/` — so the identifier in an import line and the name in the
+  UI are the same word. `publish_to: none` keeps pub.dev namespace out of it, and
+  `acorde` is unclaimed there regardless (404). The mail branding follows: the
+  SMTP sender-name default is `Acorde` (it was `Event Calendar`, an English name in
+  an app that ships only Portuguese), including the hidden
+  `settings.meta.appName` fallback that produced it and the three email strings
+  that spelled it out. Verified by a tree-wide search for the old names returning
+  nothing outside this changelog, and by the full suite and the two backend
+  integration scripts after re-resolving the renamed package.
 * **The analyzer is a gate, not advice.** `dart format`'s tall style was swept
   across the 56 files that predated it, and the last 31 analyzer infos are gone:
   20 `avoid_print` (the dev scripts now write through `stdout`, matching the

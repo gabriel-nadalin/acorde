@@ -1,7 +1,7 @@
-# Agenda de Eventos — development guide
+# Acorde — development guide
 
 (The product is named in Portuguese, the language it ships in; the Dart package
-and the deployment identifiers are `event_calendar`.)
+and the deployment identifiers are `acorde`.)
 
 The engineering document: architecture, the reasoning behind each decision,
 deployment, tests and the pinned toolchain. For what the app is and how to run
@@ -42,6 +42,19 @@ itself ownership.
 grants nothing. Every access decision is a `memberships` row with
 `role = manager` and `status = active`, which is what makes ownership
 transferable and lets a creator step away.
+
+### Times are UTC on the wire, local on screen
+
+`events.start`/`end` are stored as explicit UTC instants and written that way by
+`Event.toMap`, because month queries and the server's overlap check compare them
+lexically — a naive local time would misalign at a month boundary. Every screen
+renders them through `toLocal()`, so the schedule is read on the *viewer's* clock
+and two people in different zones see the same booking at different wall times.
+
+`venues.timezone` does not participate. It is free text on the venue record, kept
+because bookers write it down, and read by nothing: making it authoritative would
+mean every screen resolving a zone per venue, plus a real picker in place of the
+text box. The field is documented as a note so it does not read as a promise.
 
 ### Why membership is its own collection
 
@@ -257,8 +270,24 @@ is on **`end`** deliberately. A booking that began an hour ago and runs for
 another hour is the most immediate thing on the schedule, so asking only for
 future *starts* would hide it until it was over.
 
-Rows group under the day they fall on, because a schedule read at a glance is
-read by day. The dashboard carries a three-row preview of the same list, so the
+**The query returns every event on the server; the screen shows this account's.**
+The repository cannot narrow it — "mine" is a question about the viewer — so it
+hands back what the server reported and the screen applies `eventInScope`
+(`lib/utils/event_scope.dart`) before the display cap. That order matters:
+capping in the repository, before the scope is known, would let other people's
+bookings fill the fifty-row window and push this account's off the end.
+
+The same predicate decides the calendar's marks and this list's rows, which is
+what makes tapping a day header land somewhere coherent. They used to be two
+implementations — `events_list.dart` filtered by its copy, `upcoming.dart`
+coloured by its — so a booking touching none of your assignments was listed and
+then missing from the month the tap opened. `test/event_scoping_test.dart` holds
+the two screens to the same answer, booking for booking.
+
+Rows group under the month, and then the day they fall on, because a schedule
+read at a glance is read by day — and a long list needs the month boundaries,
+which the day headers alone do not give. A day header opens the calendar on that
+day's month. The dashboard carries a three-row preview of the same list, so the
 answer is visible without a tap.
 
 Like the month cache, the result is kept in memory with a `stale` flag rather than
@@ -624,8 +653,14 @@ dart run scripts/verify_schema.dart  # migration snapshot vs. the client contrac
 
 Optional overrides: `PB_TEST_URL` (drive an already-running instance instead of
 booting one), `PB_TEST_ADMIN_EMAIL`, `PB_TEST_ADMIN_PASSWORD`,
-`PB_TEST_BINARY` (default `./pocketbase`), `PB_TEST_PORT` (default: a free port),
-`PB_TEST_DATA_DIR`. With no variables set, everything has a default.
+`PB_TEST_BINARY` (default `./pocketbase`), `PB_TEST_PORT` (default: a free port).
+With no variables set, everything has a default.
+
+`scripts/create_pocketbase_collections.dart` and `scripts/seed_pocketbase_data.dart`
+push schema and demo records onto a *running* instance. They authenticate with
+`PB_URL` plus either `PB_ADMIN_EMAIL`/`PB_ADMIN_PASSWORD` or a Netscape-format
+cookie file, whose path is `PB_COOKIE` (default `.pb_cookie`, which `.gitignore`
+excludes).
 
 ---
 

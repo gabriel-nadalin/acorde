@@ -1,11 +1,13 @@
-# Agenda de Eventos
+# Acorde
 
-Agenda de eventos para locais e artistas. Serve para um local organizar a agenda do
-espaço e para uma banda acompanhar as datas dela, no mesmo calendário.
+Acorde é uma agenda de eventos para locais e artistas. Serve para um local organizar a
+agenda do espaço e para uma banda acompanhar as datas dela, no mesmo calendário.
 
-A interface é em português, e é esse o nome que aparece no app, na aba do navegador e
-no ícone instalado. O pacote Dart e os identificadores de publicação continuam
-`event_calendar`.
+O nome é a palavra que o próprio app já usa para a visão que junta as duas pontas
+(*Combinado*): as notas de um acorde só funcionam afinadas umas com as outras, do mesmo
+jeito que um local e quem toca nele dividem um horário. Ele é em português, a língua em
+que a interface é escrita, e é o que aparece no app, na aba do navegador e no ícone
+instalado. O pacote Dart e os identificadores de publicação são `acorde`.
 
 <p align="center">
   <img src="docs/img/calendario.png" alt="Calendário mensal, com abas por local e por artista" width="760">
@@ -30,6 +32,10 @@ no ícone instalado. O pacote Dart e os identificadores de publicação continua
   só no painel.
 * Cache local dos dados. Sem rede, o app mostra a última informação carregada e
   indica que está desatualizada.
+* Horários no fuso de quem está lendo, não no do local. O campo "Fuso horário" do
+  cadastro de um local é uma anotação do registro — ele não desloca o que aparece
+  na agenda. Duas pessoas em fusos diferentes veem o mesmo evento na hora local de
+  cada uma.
 
 ## Como rodar
 
@@ -108,6 +114,20 @@ implantação com usuários de verdade deve desligar.
 As capturas de tela abaixo são de uma conta de demonstração, com três locais, três
 artistas e alguns shows cadastrados. Os dados são fictícios.
 
+### Recuperar a senha
+
+"Esqueceu a senha?" pede o e-mail e manda um link para escolher uma nova senha. O
+link abre o app direto na tela de redefinição.
+
+A resposta é sempre a mesma — "se esse endereço tiver uma conta, o link está a
+caminho" — inclusive quando não existe conta com aquele e-mail. Isso é de
+propósito: uma mensagem que separasse os dois casos diria a qualquer visitante
+quais endereços têm conta aqui.
+
+Mandar o link depende de o servidor ter SMTP configurado (`PB_SMTP_*`). Sem isso a
+tela avisa que a recuperação não está disponível, e o caminho passa a ser pedir a
+um administrador para redefinir a senha.
+
 ### Painel
 
 <p align="center">
@@ -144,10 +164,25 @@ cada cor significa.
 Tudo que ainda não terminou, agrupado por dia e ordenado pelo horário de início. Um
 evento que já começou e ainda está acontecendo continua na lista.
 
+### Recorrência
+
+Na criação de um evento dá para repeti-lo: todo dia, toda semana ou todo mês,
+terminando numa data ou depois de um número de ocorrências. Cada ocorrência vira um
+evento próprio, então dá para editar uma sem mexer nas outras.
+
+Excluir um evento que se repete por isso pergunta antes: **somente este** ou **a
+série inteira**, com o número de ocorrências no botão. Apagar a série não tem volta,
+e apagar uma noite achando que era a série — ou o contrário — é justamente o engano
+que essa pergunta existe para evitar.
+
 ### Locais e artistas
+
+As duas listas têm a mesma forma, uma para cada ponta da agenda.
 
 <p align="center">
   <img src="docs/img/locais.png" alt="Lista de locais, com ações de criar evento e editar para o que você administra" width="760">
+  <br>
+  <img src="docs/img/artistas.png" alt="Lista de artistas, com as mesmas ações por linha" width="760">
 </p>
 
 Listas públicas. Em cada linha:
