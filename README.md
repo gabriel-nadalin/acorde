@@ -1,7 +1,7 @@
 # Acorde
 
 Acorde é uma agenda de eventos para locais e artistas. Serve para um local organizar a
-agenda do espaço e para uma banda acompanhar as datas dela, no mesmo calendário.
+agenda do espaço e para uma banda acompanhar as suas datas, no mesmo calendário.
 
 O nome é a palavra que o próprio app já usa para a visão que junta as duas pontas
 (*Combinado*): as notas de um acorde só funcionam afinadas umas com as outras, do mesmo
