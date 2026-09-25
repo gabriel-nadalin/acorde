@@ -742,6 +742,20 @@ Newer stable Flutter releases build this project too, but CI and the deployed
 image both use 3.44.0, and the `flutter` job fails if the workflow, the
 `Dockerfile` and this table disagree. Bump all of them together.
 
+**Run the gates on the pinned version, not whatever `flutter` is on your PATH.**
+`dart format` and `flutter analyze` are part of that toolchain, and both can
+disagree across minor versions about code that is equally valid in each: the
+formatter lays some expressions out two ways, and the analyzer's view of when a
+nullable variable is promoted has changed. Both gates were red for two commits
+while every local run passed on a newer SDK, so before pushing:
+
+```bash
+dart format lib test scripts && flutter analyze && flutter test
+```
+
+`pubspec.lock` is committed and resolved with the pinned SDK. A newer one will
+rewrite it; leave that out of your change unless the bump is deliberate.
+
 ## Project layout
 
 ```
