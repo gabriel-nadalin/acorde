@@ -96,10 +96,17 @@ Future<int> main(List<String> args) async {
       throw Exception('Unsupported method $method');
     }
 
-    if (resp.statusCode == 401 && adminToken != null) {
+    // Snapshot into a `final` local rather than asserting on the outer
+    // variable. Whether Dart promotes a mutable local that a closure also
+    // touches is exactly the kind of thing that changes between SDK versions:
+    // the pinned toolchain in CI promotes it here and calls the `!` redundant,
+    // while a newer one does not promote it and requires the `!`. A final local
+    // reads as non-null on both, so neither has an opinion to offer.
+    final token = adminToken;
+    if (resp.statusCode == 401 && token != null) {
       final authHeaders = Map<String, String>.from(headers);
       authHeaders.remove('Cookie');
-      authHeaders['Authorization'] = 'Bearer $adminToken';
+      authHeaders['Authorization'] = 'Bearer $token';
       if (method == 'GET') {
         resp = await client.get(url, headers: authHeaders);
       } else if (method == 'POST') {
@@ -109,7 +116,7 @@ Future<int> main(List<String> args) async {
       }
 
       if (resp.statusCode == 401) {
-        authHeaders['Authorization'] = adminToken!;
+        authHeaders['Authorization'] = token;
         if (method == 'GET') {
           resp = await client.get(url, headers: authHeaders);
         } else if (method == 'POST') {

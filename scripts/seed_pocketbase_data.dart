@@ -119,14 +119,20 @@ Future<int> main(List<String> args) async {
 
     // Fallbacks for an instance that wants a different credential shape: drop
     // the cookie and retry, then send the token with no scheme at all.
-    if ((resp.statusCode == 401 || resp.statusCode == 403) &&
-        adminToken != null) {
+    // Snapshot into a `final` local rather than asserting on the outer
+    // variable. Whether Dart promotes a mutable local that a closure also
+    // touches is exactly the kind of thing that changes between SDK versions:
+    // the pinned toolchain in CI promotes it here and calls the `!` redundant,
+    // while a newer one does not promote it and requires the `!`. A final local
+    // reads as non-null on both, so neither has an opinion to offer.
+    final token = adminToken;
+    if ((resp.statusCode == 401 || resp.statusCode == 403) && token != null) {
       final authHeaders = Map<String, String>.from(headers);
       authHeaders.remove('Cookie');
       resp = await repeatRequest(method, url, authHeaders, payload);
 
       if (resp.statusCode == 401 || resp.statusCode == 403) {
-        authHeaders['Authorization'] = adminToken!;
+        authHeaders['Authorization'] = token;
         resp = await repeatRequest(method, url, authHeaders, payload);
       }
     }

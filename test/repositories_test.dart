@@ -231,9 +231,11 @@ void main() {
         final forced = venues.load(force: true);
 
         await forced;
-        expect(venues.items.map((venue) => venue.name), [
-          'Second',
-        ], reason: 'the forced pass must not silently join the in-flight one');
+        expect(
+          venues.items.map((venue) => venue.name),
+          equals(['Second']),
+          reason: 'the forced pass must not silently join the in-flight one',
+        );
 
         gate.complete();
         await inFlight;
@@ -368,9 +370,11 @@ void main() {
 
         final served = await events.loadForMonth(DateTime(2026, 9));
 
-        expect(served.map((event) => event.id), [
-          'sep',
-        ], reason: 'the cached month is served, not an error');
+        expect(
+          served.map((event) => event.id),
+          equals(['sep']),
+          reason: 'the cached month is served, not an error',
+        );
         expect(events.isMonthStale(DateTime(2026, 9)), isTrue);
         expect(
           events.isMonthStale(DateTime(2026, 10)),

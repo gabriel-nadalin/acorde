@@ -57,10 +57,17 @@ jobs:
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test scripts
 
-      # Infos are fatal (the default): the tree carries none, so a new one is a
-      # decision to make rather than background noise. `--no-fatal-infos` used to
-      # sit here and hid the two lints that were tolerated, 20 `avoid_print` and
-      # 11 unbraced single-statement bodies in the dev scripts.
+      # Warnings and errors are fatal by default; infos are not, which is why the
+      # tree carries none of any of them - a new one is a decision to make rather
+      # than background noise. `--no-fatal-infos` used to sit here and hid the two
+      # lints that were tolerated: 20 `avoid_print` and 11 unbraced
+      # single-statement bodies in the dev scripts.
+      #
+      # This runs on the PINNED toolchain, and so must a local run: an analyzer
+      # from a newer SDK can disagree about a promotion, and a formatter from a
+      # different minor version can lay out the same expression two ways. Both
+      # happened here - the format check and this step were red for two commits
+      # while every local run passed on a newer Flutter.
       - run: flutter analyze
 
       - run: flutter test
