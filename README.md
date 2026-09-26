@@ -2,12 +2,7 @@
 
 Acorde é uma agenda de eventos para locais e artistas. Serve para um local organizar a
 agenda do espaço e para uma banda acompanhar as suas datas, no mesmo calendário.
-
-O nome é a palavra que o próprio app já usa para a visão que junta as duas pontas
-(*Combinado*): as notas de um acorde só funcionam afinadas umas com as outras, do mesmo
-jeito que um local e quem toca nele dividem um horário. Ele é em português, a língua em
-que a interface é escrita, e é o que aparece no app, na aba do navegador e no ícone
-instalado. O pacote Dart e os identificadores de publicação são `acorde`.
+O pacote Dart e os identificadores de publicação são `acorde`.
 
 <p align="center">
   <img src="docs/img/calendario.png" alt="Calendário mensal, com abas por local e por artista" width="760">
