@@ -220,6 +220,113 @@ Future<int> main(List<String> args) async {
     }
   }
 
+  /// Creates a demo event, or updates the one already at that (title, start).
+  ///
+  /// `createIfMissing` is the wrong shape here: an event has no unique field to
+  /// key off — two different acts play the same venue at different times, and
+  /// the same act plays many nights — so identity is the (title, start) pair,
+  /// which is also what makes a re-run find the row it wrote last time rather
+  /// than inserting a second copy of the whole calendar.
+  ///
+  /// The update path is needed because `createdBy` cannot be sent on create: the
+  /// guard overwrites it with `""` for a superuser, on the reasoning that a
+  /// record created from the admin side has no `users` id to attribute it to.
+  /// A second PATCH as the superuser IS allowed to set it, which is the same
+  /// route `ensureCreatedBy` uses for venues and performers, and it leaves the
+  /// seeded events owned by the person who manages their venue.
+  Future<void> upsertEvent({
+    required String title,
+    required String start,
+    required String end,
+    required String venueId,
+    required List<String> performerIds,
+    required String createdBy,
+  }) async {
+    final filter = Uri.encodeComponent('title="$title" && start="$start"');
+    final lookup = await pbRequest(
+      'GET',
+      Uri.parse(
+        '$pbUrl/api/collections/events/records?perPage=1&filter=$filter',
+      ),
+    );
+    if (lookup.statusCode >= 200 && lookup.statusCode < 300) {
+      final data = jsonDecode(lookup.body) as Map<String, dynamic>;
+      final items = data['items'] ?? data['data'] ?? [];
+      if (items is List && items.isNotEmpty) {
+        final existing = Map<String, dynamic>.from(items.first as Map);
+        // Already there from a previous run. Only the creator is worth
+        // re-asserting; rewriting the times would fight a local edit for no
+        // reason.
+        if (createdBy.isNotEmpty &&
+            (existing['createdBy'] ?? '').toString().isEmpty) {
+          final patch = await pbRequest(
+            'PATCH',
+            Uri.parse(
+              '$pbUrl/api/collections/events/records/${existing['id']}',
+            ),
+            body: {'createdBy': createdBy},
+          );
+          if (patch.statusCode >= 200 && patch.statusCode < 300) {
+            stdout.writeln('Set events "$title" createdBy=$createdBy');
+          } else {
+            stderr.writeln(
+              'Failed to set events "$title" createdBy: '
+              '${patch.statusCode} ${patch.body}',
+            );
+          }
+        } else {
+          stdout.writeln('Skip events "$title" at $start (already exists).');
+        }
+        return;
+      }
+    } else {
+      stderr.writeln(
+        'Event lookup failed for "$title" at $start: '
+        '${lookup.statusCode} ${lookup.body}',
+      );
+      return;
+    }
+
+    final resp = await pbRequest(
+      'POST',
+      Uri.parse('$pbUrl/api/collections/events/records'),
+      body: {
+        'title': title,
+        'start': start,
+        'end': end,
+        'venueId': venueId,
+        'performers': performerIds,
+      },
+    );
+    if (resp.statusCode >= 200 && resp.statusCode < 300) {
+      final body = jsonDecode(resp.body) as Map<String, dynamic>;
+      final id = body['id']?.toString();
+      stdout.writeln('Created events "$title" at $start (id=$id).');
+      // Second step, as above: the guard clears `createdBy` on create for a
+      // superuser, so recording provenance is necessarily a PATCH afterwards.
+      if (createdBy.isNotEmpty && id != null) {
+        final patch = await pbRequest(
+          'PATCH',
+          Uri.parse('$pbUrl/api/collections/events/records/$id'),
+          body: {'createdBy': createdBy},
+        );
+        if (patch.statusCode >= 200 && patch.statusCode < 300) {
+          stdout.writeln('Set events "$title" createdBy=$createdBy');
+        } else {
+          stderr.writeln(
+            'Failed to set events "$title" createdBy: '
+            '${patch.statusCode} ${patch.body}',
+          );
+        }
+      }
+    } else {
+      stderr.writeln(
+        'Failed to create events "$title" at $start: '
+        '${resp.statusCode} ${resp.body}',
+      );
+    }
+  }
+
   /// Records [createdBy] on the entity when it does not have a creator yet.
   ///
   /// `createdBy` is server-set by entities.guard.pb.js and never client-writable
@@ -502,10 +609,410 @@ Future<int> main(List<String> args) async {
     }
   }
 
+  // Demo events, so a fresh clone opens on a calendar with something in it
+  // instead of an empty grid that reads as a broken screen.
+  //
+  // Spread across the whole week on purpose — Tuesday through Sunday, plus
+  // Mondays in October and November. An earlier dataset put every event on a
+  // Friday or Saturday, which left six of the seven weekday columns empty and
+  // made the month look half-populated no matter how many rows were seeded.
+  //
+  // `createdBy` follows the person who manages the venue, so the ownership the
+  // events guard checks agrees with the membership rows written above. The times
+  // are UTC: the demo deployment renders in America/Sao_Paulo, so a 22:00Z start
+  // is 19:00 local — an evening booking rather than the small hours.
+  //
+  // This block is also what the screenshots in `docs/img/` were taken from.
+  final events = <Map<String, dynamic>>[
+    _event(
+      'Ensaio geral',
+      '2026-09-01 22:00:00.000Z',
+      '2026-09-02 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-09-03 23:00:00.000Z',
+      '2026-09-04 01:00:00.000Z',
+      'Eastside Loft',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-09-06 00:00:00.000Z',
+      '2026-09-06 02:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-09-07 23:00:00.000Z',
+      '2026-09-08 01:00:00.000Z',
+      'Harbor Hall',
+      ['Radiohead'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-09-09 22:00:00.000Z',
+      '2026-09-10 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-09-12 00:00:00.000Z',
+      '2026-09-12 02:00:00.000Z',
+      'Bluebird Club',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-09-13 21:00:00.000Z',
+      '2026-09-13 23:00:00.000Z',
+      'Harbor Hall',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-09-15 22:00:00.000Z',
+      '2026-09-16 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-09-18 00:00:00.000Z',
+      '2026-09-18 02:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-09-19 23:00:00.000Z',
+      '2026-09-20 01:00:00.000Z',
+      'Harbor Hall',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-09-21 23:00:00.000Z',
+      '2026-09-22 01:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-09-23 22:00:00.000Z',
+      '2026-09-24 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-09-26 00:00:00.000Z',
+      '2026-09-26 02:00:00.000Z',
+      'Harbor Hall',
+      ['Radiohead'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-09-27 21:00:00.000Z',
+      '2026-09-27 23:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Ensaio aberto',
+      '2026-09-30 22:00:00.000Z',
+      '2026-10-01 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-10-03 00:00:00.000Z',
+      '2026-10-03 02:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-10-04 00:00:00.000Z',
+      '2026-10-04 02:30:00.000Z',
+      'Harbor Hall',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-10-05 23:00:00.000Z',
+      '2026-10-06 01:00:00.000Z',
+      'Eastside Loft',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-10-06 22:00:00.000Z',
+      '2026-10-07 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-10-08 23:00:00.000Z',
+      '2026-10-09 01:00:00.000Z',
+      'Eastside Loft',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-10-11 21:00:00.000Z',
+      '2026-10-11 23:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-10-13 22:00:00.000Z',
+      '2026-10-14 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-10-15 00:00:00.000Z',
+      '2026-10-15 02:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-10-16 23:00:00.000Z',
+      '2026-10-17 01:30:00.000Z',
+      'Harbor Hall',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-10-18 21:00:00.000Z',
+      '2026-10-18 23:00:00.000Z',
+      'Harbor Hall',
+      ['Radiohead'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-10-19 22:00:00.000Z',
+      '2026-10-20 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-10-20 22:00:00.000Z',
+      '2026-10-21 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-10-23 00:00:00.000Z',
+      '2026-10-23 02:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-10-24 23:00:00.000Z',
+      '2026-10-25 01:00:00.000Z',
+      'Eastside Loft',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-10-25 21:00:00.000Z',
+      '2026-10-25 23:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-10-27 22:00:00.000Z',
+      '2026-10-28 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-10-29 00:00:00.000Z',
+      '2026-10-29 02:00:00.000Z',
+      'Harbor Hall',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-10-30 23:00:00.000Z',
+      '2026-10-31 01:00:00.000Z',
+      'Harbor Hall',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-11-01 00:00:00.000Z',
+      '2026-11-01 02:30:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-11-03 22:00:00.000Z',
+      '2026-11-04 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-11-05 23:00:00.000Z',
+      '2026-11-06 01:00:00.000Z',
+      'Bluebird Club',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-11-08 00:00:00.000Z',
+      '2026-11-08 02:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-11-09 23:00:00.000Z',
+      '2026-11-10 01:00:00.000Z',
+      'Bluebird Club',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-11-10 22:00:00.000Z',
+      '2026-11-11 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-11-14 00:00:00.000Z',
+      '2026-11-14 02:00:00.000Z',
+      'Harbor Hall',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-11-15 21:00:00.000Z',
+      '2026-11-15 23:00:00.000Z',
+      'Eastside Loft',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Ensaio geral',
+      '2026-11-17 22:00:00.000Z',
+      '2026-11-18 00:00:00.000Z',
+      'Eastside Loft',
+      ['Radiohead'],
+    ),
+    _event(
+      'Arctic Monkeys',
+      '2026-11-20 00:00:00.000Z',
+      '2026-11-20 02:00:00.000Z',
+      'Harbor Hall',
+      ['Arctic Monkeys'],
+    ),
+    _event(
+      'Radiohead',
+      '2026-11-22 00:00:00.000Z',
+      '2026-11-22 02:00:00.000Z',
+      'Bluebird Club',
+      ['Radiohead'],
+    ),
+    _event(
+      'Thom Yorke',
+      '2026-11-27 23:00:00.000Z',
+      '2026-11-28 01:00:00.000Z',
+      'Harbor Hall',
+      ['Thom Yorke'],
+    ),
+    _event(
+      'Festival de Outono',
+      '2026-11-28 22:00:00.000Z',
+      '2026-11-29 02:30:00.000Z',
+      'Harbor Hall',
+      ['Radiohead', 'Arctic Monkeys'],
+    ),
+  ];
+
+  // `createdBy` follows the venue's manager (see `venueAssignments` above): the
+  // events guard treats "I created it" as ownership, and the venue's manager is
+  // the one the app would let edit it, so the two agree.
+  const venueManagers = <String, String>{
+    'Harbor Hall': 'thom.yorke@example.com',
+    'Eastside Loft': 'thom.yorke@example.com',
+    'Bluebird Club': 'alex.turner@example.com',
+  };
+
+  for (final spec in events) {
+    final venueName = spec['venueName'] as String;
+    final venue = await findByName('venues', venueName);
+    if (venue == null) {
+      stderr.writeln(
+        'Venue not found for event "${spec['title']}": $venueName',
+      );
+      continue;
+    }
+    final performerRows = <String>[];
+    for (final name in spec['performerNames'] as List<String>) {
+      final rec = await findByName('performers', name);
+      if (rec == null) {
+        stderr.writeln(
+          'Performer not found for event "${spec['title']}": $name',
+        );
+        continue;
+      }
+      performerRows.add(rec['id'].toString());
+    }
+    final creatorEmail = venueManagers[venueName];
+    final creatorId = creatorEmail == null ? null : usersByEmail[creatorEmail];
+
+    await upsertEvent(
+      title: spec['title'] as String,
+      start: spec['start'] as String,
+      end: spec['end'] as String,
+      venueId: venue['id'].toString(),
+      performerIds: performerRows,
+      createdBy: creatorId ?? '',
+    );
+  }
+
   client.close();
   stdout.writeln('Seed complete.');
   return 0;
 }
+
+/// One demo event, before its venue and performer names are resolved to ids.
+///
+/// The fixture table above is written in names — a reader can see that a
+/// "Radiohead" event is at "Harbor Hall" without cross-referencing id strings —
+/// and [upsertEvent] turns each row into the id shape the API wants.
+Map<String, dynamic> _event(
+  String title,
+  String start,
+  String end,
+  String venueName,
+  List<String> performerNames,
+) => {
+  'title': title,
+  'start': start,
+  'end': end,
+  'venueName': venueName,
+  'performerNames': performerNames,
+};
 
 String _cookieHeaderFromNetscape(String content) {
   final lines = LineSplitter.split(content);
